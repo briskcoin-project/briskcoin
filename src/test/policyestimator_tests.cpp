@@ -1,32 +1,27 @@
-// Copyright (c) 2011-present The Bitcoin Core developers
+// Copyright (c) 2011-2017 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <policy/fees.h>
-#include <policy/fees_args.h>
 #include <policy/policy.h>
-#include <test/util/txmempool.h>
+#include <policy/fees.h>
 #include <txmempool.h>
 #include <uint256.h>
-#include <util/time.h>
-#include <validationinterface.h>
+#include <util.h>
 
-#include <test/util/setup_common.h>
+#include <test/test_bitcoin.h>
 
 #include <boost/test/unit_test.hpp>
 
-BOOST_FIXTURE_TEST_SUITE(policyestimator_tests, ChainTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(policyestimator_tests, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
 {
-    CBlockPolicyEstimator feeEst{FeeestPath(*m_node.args), DEFAULT_ACCEPT_STALE_FEE_ESTIMATES};
-    CTxMemPool& mpool = *Assert(m_node.mempool);
-    m_node.validation_signals->RegisterValidationInterface(&feeEst);
+    CBlockPolicyEstimator feeEst;
+    CTxMemPool mpool(&feeEst);
     TestMemPoolEntryHelper entry;
     CAmount basefee(2000);
     CAmount deltaFee(100);
     std::vector<CAmount> feeV;
-    feeV.reserve(10);
 
     // Populate vectors of increasing fees
     for (int j = 0; j < 10; j++) {
@@ -48,7 +43,7 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
     tx.vin[0].scriptSig = garbage;
     tx.vout.resize(1);
     tx.vout[0].nValue=0LL;
-    CFeeRate baseRate(basefee, GetVirtualTransactionSize(CTransaction(tx)));
+    CFeeRate baseRate(basefee, GetVirtualTransactionSize(tx));
 
     // Create a fake block
     std::vector<CTransactionRef> block;
@@ -61,23 +56,8 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
         for (int j = 0; j < 10; j++) { // For each fee
             for (int k = 0; k < 4; k++) { // add 4 fee txs
                 tx.vin[0].prevout.n = 10000*blocknum+100*j+k; // make transaction unique
-                {
-                    LOCK2(cs_main, mpool.cs);
-                    mpool.addUnchecked(entry.Fee(feeV[j]).Time(Now<NodeSeconds>()).Height(blocknum).FromTx(tx));
-                    // Since TransactionAddedToMempool callbacks are generated in ATMP,
-                    // not addUnchecked, we cheat and create one manually here
-                    const int64_t virtual_size = GetVirtualTransactionSize(*MakeTransactionRef(tx));
-                    const NewMempoolTransactionInfo tx_info{NewMempoolTransactionInfo(MakeTransactionRef(tx),
-                                                                                      feeV[j],
-                                                                                      virtual_size,
-                                                                                      entry.nHeight,
-                                                                                      /*mempool_limit_bypassed=*/false,
-                                                                                      /*submitted_in_package=*/false,
-                                                                                      /*chainstate_is_current=*/true,
-                                                                                      /*has_no_mempool_parents=*/true)};
-                    m_node.validation_signals->TransactionAddedToMempool(tx_info, mpool.GetAndIncrementSequence());
-                }
                 uint256 hash = tx.GetHash();
+                mpool.addUnchecked(hash, entry.Fee(feeV[j]).Time(GetTime()).Height(blocknum).FromTx(tx));
                 txHashes[j].push_back(hash);
             }
         }
@@ -93,17 +73,10 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
                 txHashes[9-h].pop_back();
             }
         }
-
-        {
-            LOCK(mpool.cs);
-            mpool.removeForBlock(block, ++blocknum);
-        }
-
+        mpool.removeForBlock(block, ++blocknum);
         block.clear();
         // Check after just a few txs that combining buckets works as expected
         if (blocknum == 3) {
-            // Wait for fee estimator to catch up
-            m_node.validation_signals->SyncWithValidationInterfaceQueue();
             // At this point we should need to combine 3 buckets to get enough data points
             // So estimateFee(1) should fail and estimateFee(2) should return somewhere around
             // 9*baserate.  estimateFee(2) %'s are 100,100,90 = average 97%
@@ -112,9 +85,6 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
             BOOST_CHECK(feeEst.estimateFee(2).GetFeePerK() > 9*baseRate.GetFeePerK() - deltaFee);
         }
     }
-
-    // Wait for fee estimator to catch up
-    m_node.validation_signals->SyncWithValidationInterfaceQueue();
 
     std::vector<CAmount> origFeeEst;
     // Highest feerate is 10*baseRate and gets in all blocks,
@@ -141,13 +111,8 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
 
     // Mine 50 more blocks with no transactions happening, estimates shouldn't change
     // We haven't decayed the moving average enough so we still have enough data points in every bucket
-    while (blocknum < 250) {
-        LOCK(mpool.cs);
+    while (blocknum < 250)
         mpool.removeForBlock(block, ++blocknum);
-    }
-
-    // Wait for fee estimator to catch up
-    m_node.validation_signals->SyncWithValidationInterfaceQueue();
 
     BOOST_CHECK(feeEst.estimateFee(1) == CFeeRate(0));
     for (int i = 2; i < 10;i++) {
@@ -162,34 +127,13 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
         for (int j = 0; j < 10; j++) { // For each fee multiple
             for (int k = 0; k < 4; k++) { // add 4 fee txs
                 tx.vin[0].prevout.n = 10000*blocknum+100*j+k;
-                {
-                    LOCK2(cs_main, mpool.cs);
-                    mpool.addUnchecked(entry.Fee(feeV[j]).Time(Now<NodeSeconds>()).Height(blocknum).FromTx(tx));
-                    // Since TransactionAddedToMempool callbacks are generated in ATMP,
-                    // not addUnchecked, we cheat and create one manually here
-                    const int64_t virtual_size = GetVirtualTransactionSize(*MakeTransactionRef(tx));
-                    const NewMempoolTransactionInfo tx_info{NewMempoolTransactionInfo(MakeTransactionRef(tx),
-                                                                                      feeV[j],
-                                                                                      virtual_size,
-                                                                                      entry.nHeight,
-                                                                                      /*mempool_limit_bypassed=*/false,
-                                                                                      /*submitted_in_package=*/false,
-                                                                                      /*chainstate_is_current=*/true,
-                                                                                      /*has_no_mempool_parents=*/true)};
-                    m_node.validation_signals->TransactionAddedToMempool(tx_info, mpool.GetAndIncrementSequence());
-                }
                 uint256 hash = tx.GetHash();
+                mpool.addUnchecked(hash, entry.Fee(feeV[j]).Time(GetTime()).Height(blocknum).FromTx(tx));
                 txHashes[j].push_back(hash);
             }
         }
-        {
-            LOCK(mpool.cs);
-            mpool.removeForBlock(block, ++blocknum);
-        }
+        mpool.removeForBlock(block, ++blocknum);
     }
-
-    // Wait for fee estimator to catch up
-    m_node.validation_signals->SyncWithValidationInterfaceQueue();
 
     for (int i = 1; i < 10;i++) {
         BOOST_CHECK(feeEst.estimateFee(i) == CFeeRate(0) || feeEst.estimateFee(i).GetFeePerK() > origFeeEst[i-1] - deltaFee);
@@ -205,16 +149,8 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
             txHashes[j].pop_back();
         }
     }
-
-    {
-        LOCK(mpool.cs);
-        mpool.removeForBlock(block, 266);
-    }
+    mpool.removeForBlock(block, 266);
     block.clear();
-
-    // Wait for fee estimator to catch up
-    m_node.validation_signals->SyncWithValidationInterfaceQueue();
-
     BOOST_CHECK(feeEst.estimateFee(1) == CFeeRate(0));
     for (int i = 2; i < 10;i++) {
         BOOST_CHECK(feeEst.estimateFee(i) == CFeeRate(0) || feeEst.estimateFee(i).GetFeePerK() > origFeeEst[i-1] - deltaFee);
@@ -226,39 +162,17 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
         for (int j = 0; j < 10; j++) { // For each fee multiple
             for (int k = 0; k < 4; k++) { // add 4 fee txs
                 tx.vin[0].prevout.n = 10000*blocknum+100*j+k;
-                {
-                    LOCK2(cs_main, mpool.cs);
-                    mpool.addUnchecked(entry.Fee(feeV[j]).Time(Now<NodeSeconds>()).Height(blocknum).FromTx(tx));
-                    // Since TransactionAddedToMempool callbacks are generated in ATMP,
-                    // not addUnchecked, we cheat and create one manually here
-                    const int64_t virtual_size = GetVirtualTransactionSize(*MakeTransactionRef(tx));
-                    const NewMempoolTransactionInfo tx_info{NewMempoolTransactionInfo(MakeTransactionRef(tx),
-                                                                                      feeV[j],
-                                                                                      virtual_size,
-                                                                                      entry.nHeight,
-                                                                                      /*mempool_limit_bypassed=*/false,
-                                                                                      /*submitted_in_package=*/false,
-                                                                                      /*chainstate_is_current=*/true,
-                                                                                      /*has_no_mempool_parents=*/true)};
-                    m_node.validation_signals->TransactionAddedToMempool(tx_info, mpool.GetAndIncrementSequence());
-                }
                 uint256 hash = tx.GetHash();
+                mpool.addUnchecked(hash, entry.Fee(feeV[j]).Time(GetTime()).Height(blocknum).FromTx(tx));
                 CTransactionRef ptx = mpool.get(hash);
                 if (ptx)
                     block.push_back(ptx);
 
             }
         }
-
-        {
-            LOCK(mpool.cs);
-            mpool.removeForBlock(block, ++blocknum);
-        }
-
+        mpool.removeForBlock(block, ++blocknum);
         block.clear();
     }
-    // Wait for fee estimator to catch up
-    m_node.validation_signals->SyncWithValidationInterfaceQueue();
     BOOST_CHECK(feeEst.estimateFee(1) == CFeeRate(0));
     for (int i = 2; i < 9; i++) { // At 9, the original estimate was already at the bottom (b/c scale = 2)
         BOOST_CHECK(feeEst.estimateFee(i).GetFeePerK() < origFeeEst[i-1] - deltaFee);

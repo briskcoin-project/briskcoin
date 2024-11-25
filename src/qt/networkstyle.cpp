@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2021 The Bitcoin Core developers
+// Copyright (c) 2014-2017 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,23 +6,20 @@
 
 #include <qt/guiconstants.h>
 
-#include <tinyformat.h>
-#include <util/chaintype.h>
-
 #include <QApplication>
 
 static const struct {
-    const ChainType networkId;
+    const char *networkId;
     const char *appName;
     const int iconColorHueShift;
     const int iconColorSaturationReduction;
+    const char *titleAddText;
 } network_styles[] = {
-    {ChainType::MAIN, QAPP_APP_NAME_DEFAULT, 0, 0},
-    {ChainType::TESTNET, QAPP_APP_NAME_TESTNET, 70, 30},
-    {ChainType::TESTNET4, QAPP_APP_NAME_TESTNET4, 70, 30},
-    {ChainType::SIGNET, QAPP_APP_NAME_SIGNET, 35, 15},
-    {ChainType::REGTEST, QAPP_APP_NAME_REGTEST, 160, 30},
+    {"main", QAPP_APP_NAME_DEFAULT, 0, 0, ""},
+    {"test", QAPP_APP_NAME_TESTNET, 70, 30, QT_TRANSLATE_NOOP("SplashScreen", "[testnet]")},
+    {"regtest", QAPP_APP_NAME_TESTNET, 160, 30, "[regtest]"}
 };
+static const unsigned network_styles_count = sizeof(network_styles)/sizeof(*network_styles);
 
 // titleAddText needs to be const char* for tr()
 NetworkStyle::NetworkStyle(const QString &_appName, const int iconColorHueShift, const int iconColorSaturationReduction, const char *_titleAddText):
@@ -71,24 +68,29 @@ NetworkStyle::NetworkStyle(const QString &_appName, const int iconColorHueShift,
         }
 
         //convert back to QPixmap
+#if QT_VERSION >= 0x040700
         pixmap.convertFromImage(img);
+#else
+        pixmap = QPixmap::fromImage(img);
+#endif
     }
 
     appIcon             = QIcon(pixmap);
     trayAndWindowIcon   = QIcon(pixmap.scaled(QSize(256,256)));
 }
 
-const NetworkStyle* NetworkStyle::instantiate(const ChainType networkId)
+const NetworkStyle *NetworkStyle::instantiate(const QString &networkId)
 {
-    std::string titleAddText = networkId == ChainType::MAIN ? "" : strprintf("[%s]", ChainTypeToString(networkId));
-    for (const auto& network_style : network_styles) {
-        if (networkId == network_style.networkId) {
+    for (unsigned x=0; x<network_styles_count; ++x)
+    {
+        if (networkId == network_styles[x].networkId)
+        {
             return new NetworkStyle(
-                    network_style.appName,
-                    network_style.iconColorHueShift,
-                    network_style.iconColorSaturationReduction,
-                    titleAddText.c_str());
+                    network_styles[x].appName,
+                    network_styles[x].iconColorHueShift,
+                    network_styles[x].iconColorSaturationReduction,
+                    network_styles[x].titleAddText);
         }
     }
-    return nullptr;
+    return 0;
 }

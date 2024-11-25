@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Bitcoin Core developers
+// Copyright (c) 2011-2017 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,22 +6,18 @@
 #include <qt/forms/ui_openuridialog.h>
 
 #include <qt/guiutil.h>
-#include <qt/platformstyle.h>
-#include <qt/sendcoinsrecipient.h>
+#include <qt/walletmodel.h>
 
-#include <QAbstractButton>
-#include <QLineEdit>
 #include <QUrl>
 
-OpenURIDialog::OpenURIDialog(const PlatformStyle* platformStyle, QWidget* parent) : QDialog(parent, GUIUtil::dialog_flags),
-                                                                                    ui(new Ui::OpenURIDialog),
-                                                                                    m_platform_style(platformStyle)
+OpenURIDialog::OpenURIDialog(QWidget *parent) :
+    QDialog(parent),
+    ui(new Ui::OpenURIDialog)
 {
     ui->setupUi(this);
-    ui->pasteButton->setIcon(m_platform_style->SingleColorIcon(":/icons/editpaste"));
-    QObject::connect(ui->pasteButton, &QAbstractButton::clicked, ui->uriEdit, &QLineEdit::paste);
-
-    GUIUtil::handleCloseWindowShortcut(this);
+#if QT_VERSION >= 0x040700
+    ui->uriEdit->setPlaceholderText("briskcoin:");
+#endif
 }
 
 OpenURIDialog::~OpenURIDialog()
@@ -37,7 +33,8 @@ QString OpenURIDialog::getURI()
 void OpenURIDialog::accept()
 {
     SendCoinsRecipient rcp;
-    if (GUIUtil::parseBitcoinURI(getURI(), &rcp)) {
+    if(GUIUtil::parseBitcoinURI(getURI(), &rcp))
+    {
         /* Only accept value URIs */
         QDialog::accept();
     } else {
@@ -45,11 +42,11 @@ void OpenURIDialog::accept()
     }
 }
 
-void OpenURIDialog::changeEvent(QEvent* e)
+void OpenURIDialog::on_selectFileButton_clicked()
 {
-    if (e->type() == QEvent::PaletteChange) {
-        ui->pasteButton->setIcon(m_platform_style->SingleColorIcon(":/icons/editpaste"));
-    }
-
-    QDialog::changeEvent(e);
+    QString filename = GUIUtil::getOpenFileName(this, tr("Select payment request file to open"), "", "", nullptr);
+    if(filename.isEmpty())
+        return;
+    QUrl fileUri = QUrl::fromLocalFile(filename);
+    ui->uriEdit->setText("briskcoin:?r=" + QUrl::toPercentEncoding(fileUri.toString()));
 }

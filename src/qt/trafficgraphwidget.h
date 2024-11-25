@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2022 The Bitcoin Core developers
+// Copyright (c) 2011-2015 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,8 +7,6 @@
 
 #include <QWidget>
 #include <QQueue>
-
-#include <chrono>
 
 class ClientModel;
 
@@ -22,29 +20,29 @@ class TrafficGraphWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit TrafficGraphWidget(QWidget *parent = nullptr);
+    explicit TrafficGraphWidget(QWidget *parent = 0);
     void setClientModel(ClientModel *model);
-    std::chrono::minutes getGraphRange() const;
+    int getGraphRangeMins() const;
 
 protected:
-    void paintEvent(QPaintEvent *) override;
+    void paintEvent(QPaintEvent *);
 
 public Q_SLOTS:
     void updateRates();
-    void setGraphRange(std::chrono::minutes new_range);
+    void setGraphRangeMins(int mins);
     void clear();
 
 private:
     void paintPath(QPainterPath &path, QQueue<float> &samples);
 
-    QTimer* timer{nullptr};
-    float fMax{0.0f};
-    std::chrono::minutes m_range{0};
+    QTimer *timer;
+    float fMax;
+    int nMins;
     QQueue<float> vSamplesIn;
     QQueue<float> vSamplesOut;
-    quint64 nLastBytesIn{0};
-    quint64 nLastBytesOut{0};
-    ClientModel* clientModel{nullptr};
+    quint64 nLastBytesIn;
+    quint64 nLastBytesOut;
+    ClientModel *clientModel;
 };
 
 #endif // BITCOIN_QT_TRAFFICGRAPHWIDGET_H

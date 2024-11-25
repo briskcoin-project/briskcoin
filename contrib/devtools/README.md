@@ -2,13 +2,16 @@ Contents
 ========
 This directory contains tools for developers working on this repository.
 
+check-doc.py
+============
+
+Check if all command line args are documented. The return value indicates the
+number of undocumented args.
+
 clang-format-diff.py
 ===================
 
 A script to format unified git diffs according to [.clang-format](../../src/.clang-format).
-
-Requires `clang-format`, installed e.g. via `brew install clang-format` on macOS,
-or `sudo apt install clang-format` on Debian/Ubuntu.
 
 For instance, to format the last commit with 0 lines of context,
 the script should be called from the git root folder as follows.
@@ -76,81 +79,102 @@ year rather than two hyphenated years.
 If the file already has a copyright for `The Bitcoin Core developers`, the
 script will exit.
 
-gen-manpages.py
+gen-manpages.sh
 ===============
 
 A small script to automatically create manpages in ../../doc/man by running the release binaries with the -help option.
 This requires help2man which can be found at: https://www.gnu.org/software/help2man/
 
-With in-tree builds this tool can be run from any directory within the
-repository. To use this tool with out-of-tree builds set `BUILDDIR`. For
-example:
+git-subtree-check.sh
+====================
 
-```bash
-BUILDDIR=$PWD/build contrib/devtools/gen-manpages.py
-```
+Run this script from the root of the repository to verify that a subtree matches the contents of
+the commit it claims to have been updated to.
 
-headerssync-params.py
-=====================
+To use, make sure that you have fetched the upstream repository branch in which the subtree is
+maintained:
+* for `src/secp256k1`: https://github.com/bitcoin-core/secp256k1.git (branch master)
+* for `src/leveldb`: https://github.com/bitcoin-core/leveldb.git (branch bitcoin-fork)
+* for `src/univalue`: https://github.com/bitcoin-core/univalue.git (branch master)
+* for `src/crypto/ctaes`: https://github.com/bitcoin-core/ctaes.git (branch master)
 
-A script to generate optimal parameters for the headerssync module (src/headerssync.cpp). It takes no command-line
-options, as all its configuration is set at the top of the file. It runs many times faster inside PyPy. Invocation:
+Usage: `git-subtree-check.sh DIR (COMMIT)`
 
-```bash
-pypy3 contrib/devtools/headerssync-params.py
-```
+`COMMIT` may be omitted, in which case `HEAD` is used.
 
-gen-bitcoin-conf.sh
-===================
+github-merge.py
+===============
 
-Generates a bitcoin.conf file in `share/examples/` by parsing the output from `bitcoind --help`. This script is run during the
-release process to include a bitcoin.conf with the release binaries and can also be run by users to generate a file locally.
-When generating a file as part of the release process, make sure to commit the changes after running the script.
+A small script to automate merging pull-requests securely and sign them with GPG.
 
-With in-tree builds this tool can be run from any directory within the
-repository. To use this tool with out-of-tree builds set `BUILDDIR`. For
-example:
+For example:
 
-```bash
-BUILDDIR=$PWD/build contrib/devtools/gen-bitcoin-conf.sh
-```
+  ./github-merge.py 3077
+
+(in any git repository) will help you merge pull request #3077 for the
+bitcoin/bitcoin repository.
+
+What it does:
+* Fetch master and the pull request.
+* Locally construct a merge commit.
+* Show the diff that merge results in.
+* Ask you to verify the resulting source tree (so you can do a make
+check or whatever).
+* Ask you whether to GPG sign the merge commit.
+* Ask you whether to push the result upstream.
+
+This means that there are no potential race conditions (where a
+pullreq gets updated while you're reviewing it, but before you click
+merge), and when using GPG signatures, that even a compromised GitHub
+couldn't mess with the sources.
+
+Setup
+---------
+Configuring the github-merge tool for the bitcoin repository is done in the following way:
+
+    git config githubmerge.repository bitcoin/bitcoin
+    git config githubmerge.testcmd "make -j4 check" (adapt to whatever you want to use for testing)
+    git config --global user.signingkey mykeyid (if you want to GPG sign)
+
+optimize-pngs.py
+================
+
+A script to optimize png files in the bitcoin
+repository (requires pngcrush).
 
 security-check.py and test-security-check.py
 ============================================
 
-Perform basic security checks on a series of executables.
+Perform basic ELF security checks on a series of executables.
 
 symbol-check.py
 ===============
 
-A script to check that release executables only contain
-certain symbols and are only linked against allowed libraries.
+A script to check that the (Linux) executables produced by gitian only contain
+allowed gcc, glibc and libstdc++ version symbols. This makes sure they are
+still compatible with the minimum supported Linux distribution versions.
 
-For Linux this means checking for allowed gcc, glibc and libstdc++ version symbols.
-This makes sure they are still compatible with the minimum supported distribution versions.
+Example usage after a gitian build:
 
-For macOS and Windows we check that the executables are only linked against libraries we allow.
+    find ../gitian-builder/build -type f -executable | xargs python contrib/devtools/symbol-check.py 
 
-Example usage:
+If only supported symbols are used the return value will be 0 and the output will be empty.
 
-    find ../path/to/executables -type f -executable | xargs python3 contrib/devtools/symbol-check.py
-
-If no errors occur the return value will be 0 and the output will be empty.
-
-If there are any errors the return value will be 1 and output like this will be printed:
+If there are 'unsupported' symbols, the return value will be 1 a list like this will be printed:
 
     .../64/test_bitcoin: symbol memcpy from unsupported version GLIBC_2.14
     .../64/test_bitcoin: symbol __fdelt_chk from unsupported version GLIBC_2.15
     .../64/test_bitcoin: symbol std::out_of_range::~out_of_range() from unsupported version GLIBCXX_3.4.15
     .../64/test_bitcoin: symbol _ZNSt8__detail15_List_nod from unsupported version GLIBCXX_3.4.15
 
-circular-dependencies.py
-========================
+update-translations.py
+======================
 
-Run this script from the root of the source tree (`src/`) to find circular dependencies in the source code.
-This looks only at which files include other files, treating the `.cpp` and `.h` file as one unit.
+Run this script from the root of the repository to update all translations from transifex.
+It will do the following automatically:
 
-Example usage:
+- fetch all translations
+- post-process them into valid and committable format
+- add missing translations to the build system (TODO)
 
-    cd .../src
-    ../contrib/devtools/circular-dependencies.py {*,*/*,*/*/*}.{h,cpp}
+See doc/translation-process.md for more information.

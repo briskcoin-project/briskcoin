@@ -1,64 +1,56 @@
-// Copyright (c) 2016-2022 The Bitcoin Core developers
+// Copyright (c) 2016-2017 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
-#include <bench/data/block413567.raw.h>
-#include <chainparams.h>
-#include <common/args.h>
-#include <consensus/validation.h>
-#include <primitives/block.h>
-#include <primitives/transaction.h>
-#include <serialize.h>
-#include <span.h>
-#include <streams.h>
-#include <util/chaintype.h>
-#include <validation.h>
 
-#include <cassert>
-#include <cstddef>
-#include <memory>
-#include <optional>
-#include <vector>
+#include <chainparams.h>
+#include <validation.h>
+#include <streams.h>
+#include <consensus/validation.h>
+
+namespace block_bench {
+#include <bench/data/block413567.raw.h>
+} // namespace block_bench
 
 // These are the two major time-sinks which happen after we have fully received
 // a block off the wire, but before we can relay the block on to peers using
 // compact block relay.
 
-static void DeserializeBlockTest(benchmark::Bench& bench)
+static void DeserializeBlockTest(benchmark::State& state)
 {
-    DataStream stream(benchmark::data::block413567);
-    std::byte a{0};
-    stream.write({&a, 1}); // Prevent compaction
+    CDataStream stream((const char*)block_bench::block413567,
+            (const char*)&block_bench::block413567[sizeof(block_bench::block413567)],
+            SER_NETWORK, PROTOCOL_VERSION);
+    char a = '\0';
+    stream.write(&a, 1); // Prevent compaction
 
-    bench.unit("block").run([&] {
+    while (state.KeepRunning()) {
         CBlock block;
-        stream >> TX_WITH_WITNESS(block);
-        bool rewound = stream.Rewind(benchmark::data::block413567.size());
-        assert(rewound);
-    });
+        stream >> block;
+        assert(stream.Rewind(sizeof(block_bench::block413567)));
+    }
 }
 
-static void DeserializeAndCheckBlockTest(benchmark::Bench& bench)
+static void DeserializeAndCheckBlockTest(benchmark::State& state)
 {
-    DataStream stream(benchmark::data::block413567);
-    std::byte a{0};
-    stream.write({&a, 1}); // Prevent compaction
+    CDataStream stream((const char*)block_bench::block413567,
+            (const char*)&block_bench::block413567[sizeof(block_bench::block413567)],
+            SER_NETWORK, PROTOCOL_VERSION);
+    char a = '\0';
+    stream.write(&a, 1); // Prevent compaction
 
-    ArgsManager bench_args;
-    const auto chainParams = CreateChainParams(bench_args, ChainType::MAIN);
+    const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
 
-    bench.unit("block").run([&] {
+    while (state.KeepRunning()) {
         CBlock block; // Note that CBlock caches its checked state, so we need to recreate it here
-        stream >> TX_WITH_WITNESS(block);
-        bool rewound = stream.Rewind(benchmark::data::block413567.size());
-        assert(rewound);
+        stream >> block;
+        assert(stream.Rewind(sizeof(block_bench::block413567)));
 
-        BlockValidationState validationState;
-        bool checked = CheckBlock(block, validationState, chainParams->GetConsensus());
-        assert(checked);
-    });
+        CValidationState validationState;
+        assert(CheckBlock(block, validationState, chainParams->GetConsensus()));
+    }
 }
 
-BENCHMARK(DeserializeBlockTest, benchmark::PriorityLevel::HIGH);
-BENCHMARK(DeserializeAndCheckBlockTest, benchmark::PriorityLevel::HIGH);
+BENCHMARK(DeserializeBlockTest, 130);
+BENCHMARK(DeserializeAndCheckBlockTest, 160);

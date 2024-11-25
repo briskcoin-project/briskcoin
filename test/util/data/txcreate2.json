@@ -4,7 +4,6 @@
     "version": 2,
     "size": 19,
     "vsize": 19,
-    "weight": 76,
     "locktime": 0,
     "vin": [
     ],
@@ -14,7 +13,6 @@
             "n": 0,
             "scriptPubKey": {
                 "asm": "",
-                "desc": "raw()#58lrscpx",
                 "hex": "",
                 "type": "nonstandard"
             }

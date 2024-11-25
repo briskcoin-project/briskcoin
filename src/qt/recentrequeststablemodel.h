@@ -1,36 +1,42 @@
-// Copyright (c) 2011-2021 The Bitcoin Core developers
+// Copyright (c) 2011-2017 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_QT_RECENTREQUESTSTABLEMODEL_H
 #define BITCOIN_QT_RECENTREQUESTSTABLEMODEL_H
 
-#include <qt/sendcoinsrecipient.h>
-
-#include <string>
+#include <qt/walletmodel.h>
 
 #include <QAbstractTableModel>
 #include <QStringList>
 #include <QDateTime>
 
-class WalletModel;
+class CWallet;
 
 class RecentRequestEntry
 {
 public:
-    RecentRequestEntry() : nVersion(RecentRequestEntry::CURRENT_VERSION) {}
+    RecentRequestEntry() : nVersion(RecentRequestEntry::CURRENT_VERSION), id(0) { }
 
     static const int CURRENT_VERSION = 1;
     int nVersion;
-    int64_t id{0};
+    int64_t id;
     QDateTime date;
     SendCoinsRecipient recipient;
 
-    SERIALIZE_METHODS(RecentRequestEntry, obj) {
-        unsigned int date_timet;
-        SER_WRITE(obj, date_timet = obj.date.toSecsSinceEpoch());
-        READWRITE(obj.nVersion, obj.id, date_timet, obj.recipient);
-        SER_READ(obj, obj.date = QDateTime::fromSecsSinceEpoch(date_timet));
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action) {
+        unsigned int nDate = date.toTime_t();
+
+        READWRITE(this->nVersion);
+        READWRITE(id);
+        READWRITE(nDate);
+        READWRITE(recipient);
+
+        if (ser_action.ForRead())
+            date = QDateTime::fromTime_t(nDate);
     }
 };
 
@@ -39,7 +45,7 @@ class RecentRequestEntryLessThan
 public:
     RecentRequestEntryLessThan(int nColumn, Qt::SortOrder fOrder):
         column(nColumn), order(fOrder) {}
-    bool operator()(const RecentRequestEntry& left, const RecentRequestEntry& right) const;
+    bool operator()(RecentRequestEntry &left, RecentRequestEntry &right) const;
 
 private:
     int column;
@@ -54,7 +60,7 @@ class RecentRequestsTableModel: public QAbstractTableModel
     Q_OBJECT
 
 public:
-    explicit RecentRequestsTableModel(WalletModel *parent);
+    explicit RecentRequestsTableModel(CWallet *wallet, WalletModel *parent);
     ~RecentRequestsTableModel();
 
     enum ColumnIndex {
@@ -67,15 +73,14 @@ public:
 
     /** @name Methods overridden from QAbstractTableModel
         @{*/
-    int rowCount(const QModelIndex &parent) const override;
-    int columnCount(const QModelIndex &parent) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
-    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-    QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
-    bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
-    Qt::ItemFlags flags(const QModelIndex &index) const override;
-    void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override;
+    int rowCount(const QModelIndex &parent) const;
+    int columnCount(const QModelIndex &parent) const;
+    QVariant data(const QModelIndex &index, int role) const;
+    bool setData(const QModelIndex &index, const QVariant &value, int role);
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const;
+    QModelIndex index(int row, int column, const QModelIndex &parent) const;
+    bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex());
+    Qt::ItemFlags flags(const QModelIndex &index) const;
     /*@}*/
 
     const RecentRequestEntry &entry(int row) const { return list[row]; }
@@ -84,13 +89,14 @@ public:
     void addNewRequest(RecentRequestEntry &recipient);
 
 public Q_SLOTS:
+    void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
     void updateDisplayUnit();
 
 private:
     WalletModel *walletModel;
     QStringList columns;
     QList<RecentRequestEntry> list;
-    int64_t nReceiveRequestsMaxId{0};
+    int64_t nReceiveRequestsMaxId;
 
     /** Updates the column title to "Amount (DisplayUnit)" and emits headerDataChanged() signal for table headers to react. */
     void updateAmountColumnTitle();

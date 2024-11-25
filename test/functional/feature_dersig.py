@@ -1,28 +1,25 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2022 The Bitcoin Core developers
+# Copyright (c) 2015-2017 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test BIP66 (DER SIG).
 
-Test the DERSIG soft-fork activation on regtest.
+Test that the DERSIG soft-fork activates at (regtest) height 1251.
 """
 
-from test_framework.blocktools import (
-    create_block,
-    create_coinbase,
-)
-from test_framework.messages import msg_block
-from test_framework.p2p import P2PInterface
-from test_framework.script import CScript
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import (
-    assert_equal,
-)
-from test_framework.wallet import (
-    MiniWallet,
-    MiniWalletMode,
-)
+from test_framework.util import *
+from test_framework.mininode import *
+from test_framework.blocktools import create_coinbase, create_block
+from test_framework.script import CScript
+from io import BytesIO
 
+DERSIG_HEIGHT = 1251
+
+# Reject codes that we might receive in this test
+REJECT_INVALID = 16
+REJECT_OBSOLETE = 17
+REJECT_NONSTANDARD = 64
 
 # A canonical signature consists of:
 # <30> <total len> <02> <len R> <R> <02> <len S> <S> <hashtype>
@@ -40,112 +37,117 @@ def unDERify(tx):
             newscript.append(i)
     tx.vin[0].scriptSig = CScript(newscript)
 
-
-DERSIG_HEIGHT = 102
-
+def create_transaction(node, coinbase, to_address, amount):
+    from_txid = node.getblock(coinbase)['tx'][0]
+    inputs = [{ "txid" : from_txid, "vout" : 0}]
+    outputs = { to_address : amount }
+    rawtx = node.createrawtransaction(inputs, outputs)
+    signresult = node.signrawtransaction(rawtx)
+    tx = CTransaction()
+    tx.deserialize(BytesIO(hex_str_to_bytes(signresult['hex'])))
+    return tx
 
 class BIP66Test(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 1
-        # whitelist peers to speed up tx relay / mempool sync
-        self.noban_tx_relay = True
-        self.extra_args = [[
-            f'-testactivationheight=dersig@{DERSIG_HEIGHT}',
-            '-par=1',  # Use only one script thread to get the exact log msg for testing
-        ]]
+        self.extra_args = [['-promiscuousmempoolflags=1', '-whitelist=127.0.0.1']]
         self.setup_clean_chain = True
-        self.rpc_timeout = 240
-
-    def create_tx(self, input_txid):
-        utxo_to_spend = self.miniwallet.get_utxo(txid=input_txid, mark_as_spent=False)
-        return self.miniwallet.create_self_transfer(utxo_to_spend=utxo_to_spend)['tx']
-
-    def test_dersig_info(self, *, is_active):
-        assert_equal(self.nodes[0].getdeploymentinfo()['deployments']['bip66'],
-            {
-                "active": is_active,
-                "height": DERSIG_HEIGHT,
-                "type": "buried",
-            },
-        )
 
     def run_test(self):
-        peer = self.nodes[0].add_p2p_connection(P2PInterface())
-        self.miniwallet = MiniWallet(self.nodes[0], mode=MiniWalletMode.RAW_P2PK)
+        self.nodes[0].add_p2p_connection(P2PInterface())
 
-        self.test_dersig_info(is_active=False)
+        network_thread_start()
+
+        # wait_for_verack ensures that the P2P connection is fully up.
+        self.nodes[0].p2p.wait_for_verack()
 
         self.log.info("Mining %d blocks", DERSIG_HEIGHT - 2)
-        self.coinbase_txids = [self.nodes[0].getblock(b)['tx'][0] for b in self.generate(self.miniwallet, DERSIG_HEIGHT - 2)]
+        self.coinbase_blocks = self.nodes[0].generate(DERSIG_HEIGHT - 2)
+        self.nodeaddress = self.nodes[0].getnewaddress()
 
         self.log.info("Test that a transaction with non-DER signature can still appear in a block")
 
-        spendtx = self.create_tx(self.coinbase_txids[0])
+        spendtx = create_transaction(self.nodes[0], self.coinbase_blocks[0],
+                self.nodeaddress, 1.0)
         unDERify(spendtx)
         spendtx.rehash()
 
         tip = self.nodes[0].getbestblockhash()
         block_time = self.nodes[0].getblockheader(tip)['mediantime'] + 1
-        block = create_block(int(tip, 16), create_coinbase(DERSIG_HEIGHT - 1), block_time, txlist=[spendtx])
+        block = create_block(int(tip, 16), create_coinbase(DERSIG_HEIGHT - 1), block_time)
+        block.nVersion = 2
+        block.vtx.append(spendtx)
+        block.hashMerkleRoot = block.calc_merkle_root()
+        block.rehash()
         block.solve()
 
-        assert_equal(self.nodes[0].getblockcount(), DERSIG_HEIGHT - 2)
-        self.test_dersig_info(is_active=False)  # Not active as of current tip and next block does not need to obey rules
-        peer.send_and_ping(msg_block(block))
-        assert_equal(self.nodes[0].getblockcount(), DERSIG_HEIGHT - 1)
-        self.test_dersig_info(is_active=True)  # Not active as of current tip, but next block must obey rules
+        self.nodes[0].p2p.send_and_ping(msg_block(block))
         assert_equal(self.nodes[0].getbestblockhash(), block.hash)
 
         self.log.info("Test that blocks must now be at least version 3")
         tip = block.sha256
         block_time += 1
-        block = create_block(tip, create_coinbase(DERSIG_HEIGHT), block_time, version=2)
+        block = create_block(tip, create_coinbase(DERSIG_HEIGHT), block_time)
+        block.nVersion = 2
+        block.rehash()
         block.solve()
+        self.nodes[0].p2p.send_and_ping(msg_block(block))
+        assert_equal(int(self.nodes[0].getbestblockhash(), 16), tip)
 
-        with self.nodes[0].assert_debug_log(expected_msgs=[f'{block.hash}, bad-version(0x00000002)']):
-            peer.send_and_ping(msg_block(block))
-            assert_equal(int(self.nodes[0].getbestblockhash(), 16), tip)
-            peer.sync_with_ping()
+        wait_until(lambda: "reject" in self.nodes[0].p2p.last_message.keys(), lock=mininode_lock)
+        with mininode_lock:
+            assert_equal(self.nodes[0].p2p.last_message["reject"].code, REJECT_OBSOLETE)
+            assert_equal(self.nodes[0].p2p.last_message["reject"].reason, b'bad-version(0x00000002)')
+            assert_equal(self.nodes[0].p2p.last_message["reject"].data, block.sha256)
+            del self.nodes[0].p2p.last_message["reject"]
 
         self.log.info("Test that transactions with non-DER signatures cannot appear in a block")
-        block.nVersion = 4
+        block.nVersion = 3
 
-        spendtx = self.create_tx(self.coinbase_txids[1])
+        spendtx = create_transaction(self.nodes[0], self.coinbase_blocks[1],
+                self.nodeaddress, 1.0)
         unDERify(spendtx)
         spendtx.rehash()
 
         # First we show that this tx is valid except for DERSIG by getting it
-        # rejected from the mempool for exactly that reason.
-        assert_equal(
-            [{
-                'txid': spendtx.hash,
-                'wtxid': spendtx.getwtxid(),
-                'allowed': False,
-                'reject-reason': 'mandatory-script-verify-flag-failed (Non-canonical DER signature)',
-            }],
-            self.nodes[0].testmempoolaccept(rawtxs=[spendtx.serialize().hex()], maxfeerate=0),
-        )
+        # accepted to the mempool (which we can achieve with
+        # -promiscuousmempoolflags).
+        self.nodes[0].p2p.send_and_ping(msg_tx(spendtx))
+        assert spendtx.hash in self.nodes[0].getrawmempool()
 
-        # Now we verify that a block with this transaction is also invalid.
+        # Now we verify that a block with this transaction is invalid.
         block.vtx.append(spendtx)
         block.hashMerkleRoot = block.calc_merkle_root()
+        block.rehash()
         block.solve()
 
-        with self.nodes[0].assert_debug_log(expected_msgs=[f'CheckInputScripts on {block.vtx[-1].hash} failed with mandatory-script-verify-flag-failed (Non-canonical DER signature)']):
-            peer.send_and_ping(msg_block(block))
-            assert_equal(int(self.nodes[0].getbestblockhash(), 16), tip)
-            peer.sync_with_ping()
+        self.nodes[0].p2p.send_and_ping(msg_block(block))
+        assert_equal(int(self.nodes[0].getbestblockhash(), 16), tip)
 
-        self.log.info("Test that a block with a DERSIG-compliant transaction is accepted")
-        block.vtx[1] = self.create_tx(self.coinbase_txids[1])
+        wait_until(lambda: "reject" in self.nodes[0].p2p.last_message.keys(), lock=mininode_lock)
+        with mininode_lock:
+            # We can receive different reject messages depending on whether
+            # bitcoind is running with multiple script check threads. If script
+            # check threads are not in use, then transaction script validation
+            # happens sequentially, and bitcoind produces more specific reject
+            # reasons.
+            assert self.nodes[0].p2p.last_message["reject"].code in [REJECT_INVALID, REJECT_NONSTANDARD]
+            assert_equal(self.nodes[0].p2p.last_message["reject"].data, block.sha256)
+            if self.nodes[0].p2p.last_message["reject"].code == REJECT_INVALID:
+                # Generic rejection when a block is invalid
+                assert_equal(self.nodes[0].p2p.last_message["reject"].reason, b'block-validation-failed')
+            else:
+                assert b'Non-canonical DER signature' in self.nodes[0].p2p.last_message["reject"].reason
+
+        self.log.info("Test that a version 3 block with a DERSIG-compliant transaction is accepted")
+        block.vtx[1] = create_transaction(self.nodes[0],
+                self.coinbase_blocks[1], self.nodeaddress, 1.0)
         block.hashMerkleRoot = block.calc_merkle_root()
+        block.rehash()
         block.solve()
 
-        self.test_dersig_info(is_active=True)  # Not active as of current tip, but next block must obey rules
-        peer.send_and_ping(msg_block(block))
-        self.test_dersig_info(is_active=True)  # Active as of current tip
+        self.nodes[0].p2p.send_and_ping(msg_block(block))
         assert_equal(int(self.nodes[0].getbestblockhash(), 16), block.sha256)
 
-
 if __name__ == '__main__':
-    BIP66Test(__file__).main()
+    BIP66Test().main()

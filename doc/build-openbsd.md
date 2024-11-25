@@ -1,143 +1,99 @@
-# OpenBSD Build Guide
+OpenBSD build guide
+======================
+(updated for OpenBSD 6.2)
 
-**Updated for OpenBSD [7.5](https://www.openbsd.org/75.html)**
+This guide describes how to build briskcoind and command-line utilities on OpenBSD.
 
-This guide describes how to build bitcoind, command-line utilities, and GUI on OpenBSD.
+OpenBSD is most commonly used as a server OS, so this guide does not contain instructions for building the GUI.
 
-## Preparation
+Preparation
+-------------
 
-### 1. Install Required Dependencies
-Run the following as root to install the base dependencies for building.
+Run the following as root to install the base dependencies for building:
 
 ```bash
-pkg_add git cmake boost libevent
+pkg_add git gmake libevent libtool
+pkg_add autoconf # (select highest version, e.g. 2.69)
+pkg_add automake # (select highest version, e.g. 1.15)
+pkg_add python # (select highest version, e.g. 3.6)
+pkg_add boost
+
+git clone https://github.com/briskcoin/briskcoin.git
 ```
 
 See [dependencies.md](dependencies.md) for a complete overview.
 
-### 2. Clone Bitcoin Repo
-Clone the Bitcoin Core repository to a directory. All build scripts and commands will run from this directory.
-``` bash
-git clone https://github.com/bitcoin/bitcoin.git
-```
+**Important**: From OpenBSD 6.2 onwards a C++11-supporting clang compiler is
+part of the base image, and while building it is necessary to make sure that this
+compiler is used and not ancient g++ 4.2.1. This is done by appending
+`CC=cc CXX=c++` to configuration commands. Mixing different compilers
+within the same executable will result in linker errors.
 
-### 3. Install Optional Dependencies
+### Building BerkeleyDB
 
-#### Wallet Dependencies
-
-It is not necessary to build wallet functionality to run either `bitcoind` or `bitcoin-qt`.
-
-###### Descriptor Wallet Support
-
-SQLite is required to support [descriptor wallets](descriptors.md).
-
-``` bash
-pkg_add sqlite3
-```
-
-###### Legacy Wallet Support
-BerkeleyDB is only required to support legacy wallets.
+BerkeleyDB is only necessary for the wallet functionality. To skip this, pass
+`--disable-wallet` to `./configure` and skip to the next section.
 
 It is recommended to use Berkeley DB 4.8. You cannot use the BerkeleyDB library
-from ports. However you can build it yourself, [using depends](/depends).
+from ports, for the same reason as boost above (g++/libstd++ incompatibility).
+If you have to build it yourself, you can use [the installation script included
+in contrib/](/contrib/install_db4.sh) like so
 
-Refer to [depends/README.md](/depends/README.md) for detailed instructions.
-
-```bash
-gmake -C depends NO_BOOST=1 NO_LIBEVENT=1 NO_QT=1 NO_SQLITE=1 NO_ZMQ=1 NO_USDT=1
-...
-to: /path/to/bitcoin/depends/*-unknown-openbsd*
+```shell
+./contrib/install_db4.sh `pwd` CC=cc CXX=c++
 ```
 
-Then set `BDB_PREFIX`:
+from the root of the repository. Then set `BDB_PREFIX` for the next section:
 
-```bash
-export BDB_PREFIX="[path displayed above]"
+```shell
+export BDB_PREFIX="$PWD/db4"
 ```
 
-#### GUI Dependencies
-###### Qt5
+### Building Briskcoin Core
 
-Bitcoin Core includes a GUI built with the cross-platform Qt Framework. To compile the GUI, we need to install
-the necessary parts of Qt, the libqrencode and pass `-DBUILD_GUI=ON`. Skip if you don't intend to use the GUI.
+**Important**: use `gmake`, not `make`. The non-GNU `make` will exit with a horrible error.
 
+Preparation:
 ```bash
-pkg_add qtbase qttools
+export AUTOCONF_VERSION=2.69 # replace this with the autoconf version that you installed
+export AUTOMAKE_VERSION=1.15 # replace this with the automake version that you installed
+./autogen.sh
+```
+Make sure `BDB_PREFIX` is set to the appropriate path from the above steps.
+
+To configure with wallet:
+```bash
+./configure --with-gui=no CC=cc CXX=c++ \
+    BDB_LIBS="-L${BDB_PREFIX}/lib -ldb_cxx-4.8" BDB_CFLAGS="-I${BDB_PREFIX}/include"
 ```
 
-###### libqrencode
-
-The GUI will be able to encode addresses in QR codes unless this feature is explicitly disabled. To install libqrencode, run:
-
+To configure without wallet:
 ```bash
-pkg_add libqrencode
+./configure --disable-wallet --with-gui=no CC=cc CXX=c++
 ```
 
-Otherwise, if you don't need QR encoding support, use the `-DWITH_QRENCODE=OFF` option to disable this feature in order to compile the GUI.
-
----
-
-#### Notifications
-###### ZeroMQ
-
-Bitcoin Core can provide notifications via ZeroMQ. If the package is installed, support will be compiled in.
+Build and run the tests:
 ```bash
-pkg_add zeromq
+gmake # use -jX here for parallelism
+gmake check
 ```
 
-#### Test Suite Dependencies
-There is an included test suite that is useful for testing code changes when developing.
-To run the test suite (recommended), you will need to have Python 3 installed:
-
-```bash
-pkg_add python  # Select the newest version of the package.
-```
-
-## Building Bitcoin Core
-
-### 1. Configuration
-
-There are many ways to configure Bitcoin Core, here are a few common examples:
-
-##### Descriptor Wallet and GUI:
-This enables descriptor wallet support and the GUI, assuming SQLite and Qt 5 are installed.
-
-```bash
-cmake -B build -DWITH_SQLITE=ON -DBUILD_GUI=ON
-```
-
-Run `cmake -B build -LH` to see the full list of available options.
-
-##### Descriptor & Legacy Wallet. No GUI:
-This enables support for both wallet types:
-
-```bash
-cmake -B build -DBerkeleyDB_INCLUDE_DIR:PATH="${BDB_PREFIX}/include" -DWITH_BDB=ON
-```
-
-### 2. Compile
-
-```bash
-cmake --build build     # Use "-j N" for N parallel jobs.
-ctest --test-dir build  # Use "-j N" for N parallel tests. Some tests are disabled if Python 3 is not available.
-```
-
-## Resource limits
+Resource limits
+-------------------
 
 If the build runs into out-of-memory errors, the instructions in this section
 might help.
 
 The standard ulimit restrictions in OpenBSD are very strict:
-```bash
-data(kbytes)         1572864
-```
 
-This is, unfortunately, in some cases not enough to compile some `.cpp` files in the project,
+    data(kbytes)         1572864
+
+This, unfortunately, in some cases not enough to compile some `.cpp` files in the project,
 (see issue [#6658](https://github.com/bitcoin/bitcoin/issues/6658)).
 If your user is in the `staff` group the limit can be raised with:
-```bash
-ulimit -d 3000000
-```
+
+    ulimit -d 3000000
+
 The change will only affect the current shell and processes spawned by it. To
 make the change system-wide, change `datasize-cur` and `datasize-max` in
 `/etc/login.conf`, and reboot.

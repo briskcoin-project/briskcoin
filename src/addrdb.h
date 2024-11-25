@@ -1,70 +1,102 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Bitcoin Core developers
+// Copyright (c) 2009-2017 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_ADDRDB_H
 #define BITCOIN_ADDRDB_H
 
-#include <net_types.h>
-#include <util/fs.h>
-#include <util/result.h>
+#include <fs.h>
+#include <serialize.h>
 
-#include <memory>
-#include <vector>
+#include <string>
+#include <map>
 
-class ArgsManager;
-class AddrMan;
-class CAddress;
-class DataStream;
-class NetGroupManager;
+class CSubNet;
+class CAddrMan;
+class CDataStream;
 
-/** Only used by tests. */
-void ReadFromStream(AddrMan& addr, DataStream& ssPeers);
+typedef enum BanReason
+{
+    BanReasonUnknown          = 0,
+    BanReasonNodeMisbehaving  = 1,
+    BanReasonManuallyAdded    = 2
+} BanReason;
 
-bool DumpPeerAddresses(const ArgsManager& args, const AddrMan& addr);
+class CBanEntry
+{
+public:
+    static const int CURRENT_VERSION=1;
+    int nVersion;
+    int64_t nCreateTime;
+    int64_t nBanUntil;
+    uint8_t banReason;
 
-/** Access to the banlist database (banlist.json) */
+    CBanEntry()
+    {
+        SetNull();
+    }
+
+    explicit CBanEntry(int64_t nCreateTimeIn)
+    {
+        SetNull();
+        nCreateTime = nCreateTimeIn;
+    }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action) {
+        READWRITE(this->nVersion);
+        READWRITE(nCreateTime);
+        READWRITE(nBanUntil);
+        READWRITE(banReason);
+    }
+
+    void SetNull()
+    {
+        nVersion = CBanEntry::CURRENT_VERSION;
+        nCreateTime = 0;
+        nBanUntil = 0;
+        banReason = BanReasonUnknown;
+    }
+
+    std::string banReasonToString() const
+    {
+        switch (banReason) {
+        case BanReasonNodeMisbehaving:
+            return "node misbehaving";
+        case BanReasonManuallyAdded:
+            return "manually added";
+        default:
+            return "unknown";
+        }
+    }
+};
+
+typedef std::map<CSubNet, CBanEntry> banmap_t;
+
+/** Access to the (IP) address database (peers.dat) */
+class CAddrDB
+{
+private:
+    fs::path pathAddr;
+public:
+    CAddrDB();
+    bool Write(const CAddrMan& addr);
+    bool Read(CAddrMan& addr);
+    static bool Read(CAddrMan& addr, CDataStream& ssPeers);
+};
+
+/** Access to the banlist database (banlist.dat) */
 class CBanDB
 {
 private:
-    /**
-     * JSON key under which the data is stored in the json database.
-     */
-    static constexpr const char* JSON_KEY = "banned_nets";
-
-    const fs::path m_banlist_dat;
-    const fs::path m_banlist_json;
+    fs::path pathBanlist;
 public:
-    explicit CBanDB(fs::path ban_list_path);
+    CBanDB();
     bool Write(const banmap_t& banSet);
-
-    /**
-     * Read the banlist from disk.
-     * @param[out] banSet The loaded list. Set if `true` is returned, otherwise it is left
-     * in an undefined state.
-     * @return true on success
-     */
     bool Read(banmap_t& banSet);
 };
-
-/** Returns an error string on failure */
-util::Result<std::unique_ptr<AddrMan>> LoadAddrman(const NetGroupManager& netgroupman, const ArgsManager& args);
-
-/**
- * Dump the anchor IP address database (anchors.dat)
- *
- * Anchors are last known outgoing block-relay-only peers that are
- * tried to re-connect to on startup.
- */
-void DumpAnchors(const fs::path& anchors_db_path, const std::vector<CAddress>& anchors);
-
-/**
- * Read the anchor IP address database (anchors.dat)
- *
- * Deleting anchors.dat is intentional as it avoids renewed peering to anchors after
- * an unclean shutdown and thus potential exploitation of the anchor peer policy.
- */
-std::vector<CAddress> ReadAnchors(const fs::path& anchors_db_path);
 
 #endif // BITCOIN_ADDRDB_H

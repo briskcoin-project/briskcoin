@@ -1,193 +1,326 @@
 UNIX BUILD NOTES
 ====================
-Some notes on how to build Bitcoin Core in Unix.
+Some notes on how to build Briskcoin Core in Unix.
 
-(For BSD specific instructions, see `build-*bsd.md` in this directory.)
+(for OpenBSD specific instructions, see [build-openbsd.md](build-openbsd.md))
+
+Note
+---------------------
+Always use absolute paths to configure and compile briskcoin and the dependencies,
+for example, when specifying the path of the dependency:
+
+	../dist/configure --enable-cxx --disable-shared --with-pic --prefix=$BDB_PREFIX
+
+Here BDB_PREFIX must be an absolute path - it is defined using $(pwd) which ensures
+the usage of the absolute path.
 
 To Build
 ---------------------
 
 ```bash
-cmake -B build
-cmake --build build    # use "-j N" for N parallel jobs
-cmake --install build  # optional
+./autogen.sh
+./configure
+make
+make install # optional
 ```
 
-See below for instructions on how to [install the dependencies on popular Linux
-distributions](#linux-distribution-specific-instructions), or the
-[dependencies](#dependencies) section for a complete overview.
+This will build briskcoin-qt as well if the dependencies are met.
 
-## Memory Requirements
+Dependencies
+---------------------
+
+These dependencies are required:
+
+ Library     | Purpose          | Description
+ ------------|------------------|----------------------
+ libssl      | Crypto           | Random Number Generation, Elliptic Curve Cryptography
+ libboost    | Utility          | Library for threading, data structures, etc
+ libevent    | Networking       | OS independent asynchronous networking
+
+Optional dependencies:
+
+ Library     | Purpose          | Description
+ ------------|------------------|----------------------
+ miniupnpc   | UPnP Support     | Firewall-jumping support
+ libdb4.8    | Berkeley DB      | Wallet storage (only needed when wallet enabled)
+ qt          | GUI              | GUI toolkit (only needed when GUI enabled)
+ protobuf    | Payments in GUI  | Data interchange format used for payment protocol (only needed when GUI enabled)
+ libqrencode | QR codes in GUI  | Optional for generating QR codes (only needed when GUI enabled)
+ univalue    | Utility          | JSON parsing and encoding (bundled version will be used unless --with-system-univalue passed to configure)
+ libzmq3     | ZMQ notification | Optional, allows generating ZMQ notifications (requires ZMQ version >= 4.x)
+
+For the versions used, see [dependencies.md](dependencies.md)
+
+Memory Requirements
+--------------------
 
 C++ compilers are memory-hungry. It is recommended to have at least 1.5 GB of
-memory available when compiling Bitcoin Core. On systems with less, gcc can be
-tuned to conserve memory with additional `CMAKE_CXX_FLAGS`:
+memory available when compiling Briskcoin Core. On systems with less, gcc can be
+tuned to conserve memory with additional CXXFLAGS:
 
 
-    cmake -B build -DCMAKE_CXX_FLAGS="--param ggc-min-expand=1 --param ggc-min-heapsize=32768"
+    ./configure CXXFLAGS="--param ggc-min-expand=1 --param ggc-min-heapsize=32768"
 
-Alternatively, or in addition, debugging information can be skipped for compilation.
-For the default build type `RelWithDebInfo`, the default compile flags are
-`-O2 -g`, and can be changed with:
-
-    cmake -B build -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O2 -g0"
-
-Finally, clang (often less resource hungry) can be used instead of gcc, which is used by default:
-
-    cmake -B build -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang
-
-## Linux Distribution Specific Instructions
-
-### Ubuntu & Debian
-
-#### Dependency Build Instructions
-
+Dependency Build Instructions: Ubuntu & Debian
+----------------------------------------------
 Build requirements:
 
-    sudo apt-get install build-essential cmake pkg-config python3
+    sudo apt-get install build-essential libtool autotools-dev automake pkg-config libssl-dev libevent-dev bsdmainutils python3
 
-Now, you can either build from self-compiled [depends](#dependencies) or install the required dependencies:
+Options when installing required Boost library files:
 
-    sudo apt-get install libevent-dev libboost-dev
+1. On at least Ubuntu 14.04+ and Debian 7+ there are generic names for the
+individual boost development packages, so the following can be used to only
+install necessary parts of boost:
 
-SQLite is required for the descriptor wallet:
+        sudo apt-get install libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-program-options-dev libboost-test-dev libboost-thread-dev
 
-    sudo apt install libsqlite3-dev
+2. If that doesn't work, you can install all boost development packages with:
 
-Berkeley DB is only required for the legacy wallet. Ubuntu and Debian have their own `libdb-dev` and `libdb++-dev` packages,
-but these will install Berkeley DB 5.3 or later. This will break binary wallet compatibility with the distributed
-executables, which are based on BerkeleyDB 4.8. Otherwise, you can build Berkeley DB [yourself](#berkeley-db).
+        sudo apt-get install libboost-all-dev
 
-To build Bitcoin Core without wallet, see [*Disable-wallet mode*](#disable-wallet-mode)
+BerkeleyDB is required for the wallet.
 
-ZMQ dependencies (provides ZMQ API):
+**For Ubuntu only:** db4.8 packages are available [here](https://launchpad.net/~briskcoin/+archive/briskcoin).
+You can add the repository and install using the following commands:
+
+    sudo apt-get install software-properties-common
+    sudo add-apt-repository ppa:briskcoin/briskcoin -y
+    sudo apt-get update
+    sudo apt-get install libdb-dev libdb++-dev
+
+Ubuntu and Debian have their own libdb-dev and libdb++-dev packages, but these will install
+BerkeleyDB 5.1 or later, which break binary wallet compatibility with the distributed executables which
+are based on BerkeleyDB 4.8. If you do not care about wallet compatibility,
+pass `--with-incompatible-bdb` to configure.
+
+See the section "Disable-wallet mode" to build Briskcoin Core without wallet.
+
+Optional (see --with-miniupnpc and --enable-upnp-default):
+
+    sudo apt-get install libminiupnpc-dev
+
+ZMQ dependencies (provides ZMQ API 4.x):
 
     sudo apt-get install libzmq3-dev
 
-User-Space, Statically Defined Tracing (USDT) dependencies:
+Dependencies for the GUI: Ubuntu & Debian
+-----------------------------------------
 
-    sudo apt install systemtap-sdt-dev
+If you want to build Briskcoin-Qt, make sure that the required packages for Qt development
+are installed. Either Qt 5 or Qt 4 are necessary to build the GUI.
+If both Qt 4 and Qt 5 are installed, Qt 5 will be used. Pass `--with-gui=qt4` to configure to choose Qt4.
+To build without GUI pass `--without-gui`.
 
-GUI dependencies:
+To build with Qt 5 (recommended) you need the following:
 
-Bitcoin Core includes a GUI built with the cross-platform Qt Framework. To compile the GUI, we need to install
-the necessary parts of Qt, the libqrencode and pass `-DBUILD_GUI=ON`. Skip if you don't intend to use the GUI.
+    sudo apt-get install libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libprotobuf-dev protobuf-compiler
 
-    sudo apt-get install qtbase5-dev qttools5-dev qttools5-dev-tools
+Alternatively, to build with Qt 4 you need the following:
 
-Additionally, to support Wayland protocol for modern desktop environments:
+    sudo apt-get install libqt4-dev libprotobuf-dev protobuf-compiler
 
-    sudo apt install qtwayland5
-
-The GUI will be able to encode addresses in QR codes unless this feature is explicitly disabled. To install libqrencode, run:
+libqrencode (optional) can be installed with:
 
     sudo apt-get install libqrencode-dev
 
-Otherwise, if you don't need QR encoding support, use the `-DWITH_QRENCODE=OFF` option to disable this feature in order to compile the GUI.
+Once these are installed, they will be found by configure and a briskcoin-qt executable will be
+built by default.
 
-
-### Fedora
-
-#### Dependency Build Instructions
-
+Dependency Build Instructions: Fedora
+-------------------------------------
 Build requirements:
 
-    sudo dnf install gcc-c++ cmake make python3
+    sudo dnf install gcc-c++ libtool make autoconf automake openssl-devel libevent-devel boost-devel libdb4-devel libdb4-cxx-devel python3
 
-Now, you can either build from self-compiled [depends](#dependencies) or install the required dependencies:
+Optional:
 
-    sudo dnf install libevent-devel boost-devel
+    sudo dnf install miniupnpc-devel
 
-SQLite is required for the descriptor wallet:
+To build with Qt 5 (recommended) you need the following:
 
-    sudo dnf install sqlite-devel
+    sudo dnf install qt5-qttools-devel qt5-qtbase-devel protobuf-devel
 
-Berkeley DB is only required for the legacy wallet. Fedora releases have only `libdb-devel` and `libdb-cxx-devel` packages, but these will install
-Berkeley DB 5.3 or later. This will break binary wallet compatibility with the distributed executables, which
-are based on Berkeley DB 4.8. Otherwise, you can build Berkeley DB [yourself](#berkeley-db).
-
-To build Bitcoin Core without wallet, see [*Disable-wallet mode*](#disable-wallet-mode)
-
-ZMQ dependencies (provides ZMQ API):
-
-    sudo dnf install zeromq-devel
-
-User-Space, Statically Defined Tracing (USDT) dependencies:
-
-    sudo dnf install systemtap-sdt-devel
-
-GUI dependencies:
-
-Bitcoin Core includes a GUI built with the cross-platform Qt Framework. To compile the GUI, we need to install
-the necessary parts of Qt, the libqrencode and pass `-DBUILD_GUI=ON`. Skip if you don't intend to use the GUI.
-
-    sudo dnf install qt5-qttools-devel qt5-qtbase-devel
-
-Additionally, to support Wayland protocol for modern desktop environments:
-
-    sudo dnf install qt5-qtwayland
-
-The GUI will be able to encode addresses in QR codes unless this feature is explicitly disabled. To install libqrencode, run:
+libqrencode (optional) can be installed with:
 
     sudo dnf install qrencode-devel
 
-Otherwise, if you don't need QR encoding support, use the `-DWITH_QRENCODE=OFF` option to disable this feature in order to compile the GUI.
+Notes
+-----
+The release is built with GCC and then "strip briskcoind" to strip the debug
+symbols, which reduces the executable size by about 90%.
 
-## Dependencies
 
-See [dependencies.md](dependencies.md) for a complete overview, and
-[depends](/depends/README.md) on how to compile them yourself, if you wish to
-not use the packages of your Linux distribution.
+miniupnpc
+---------
 
-### Berkeley DB
+[miniupnpc](http://miniupnp.free.fr/) may be used for UPnP port mapping.  It can be downloaded from [here](
+http://miniupnp.tuxfamily.org/files/).  UPnP support is compiled in and
+turned off by default.  See the configure options for upnp behavior desired:
 
-The legacy wallet uses Berkeley DB. To ensure backwards compatibility it is
-recommended to use Berkeley DB 4.8. If you have to build it yourself, and don't
-want to use any other libraries built in depends, you can do:
-```bash
-make -C depends NO_BOOST=1 NO_LIBEVENT=1 NO_QT=1 NO_SQLITE=1 NO_ZMQ=1 NO_USDT=1
-...
-to: /path/to/bitcoin/depends/x86_64-pc-linux-gnu
+	--without-miniupnpc      No UPnP support miniupnp not required
+	--disable-upnp-default   (the default) UPnP support turned off by default at runtime
+	--enable-upnp-default    UPnP support turned on by default at runtime
+
+
+Berkeley DB
+-----------
+It is recommended to use Berkeley DB 4.8. If you have to build it yourself,
+you can use [the installation script included in contrib/](/contrib/install_db4.sh)
+like so
+
+```shell
+./contrib/install_db4.sh `pwd`
 ```
-and configure using the following:
-```bash
-export BDB_PREFIX="/path/to/bitcoin/depends/x86_64-pc-linux-gnu"
 
-cmake -B build -DBerkeleyDB_INCLUDE_DIR:PATH="${BDB_PREFIX}/include" -DWITH_BDB=ON
-```
+from the root of the repository.
 
-**Note**: Make sure that `BDB_PREFIX` is an absolute path.
+**Note**: You only need Berkeley DB if the wallet is enabled (see the section *Disable-Wallet mode* below).
 
-**Note**: You only need Berkeley DB if the legacy wallet is enabled (see [*Disable-wallet mode*](#disable-wallet-mode)).
+Boost
+-----
+If you need to build Boost yourself:
+
+	sudo su
+	./bootstrap.sh
+	./bjam install
+
+
+Security
+--------
+To help make your briskcoin installation more secure by making certain attacks impossible to
+exploit even if a vulnerability is found, binaries are hardened by default.
+This can be disabled with:
+
+Hardening Flags:
+
+	./configure --enable-hardening
+	./configure --disable-hardening
+
+
+Hardening enables the following features:
+
+* Position Independent Executable
+    Build position independent code to take advantage of Address Space Layout Randomization
+    offered by some kernels. Attackers who can cause execution of code at an arbitrary memory
+    location are thwarted if they don't know where anything useful is located.
+    The stack and heap are randomly located by default but this allows the code section to be
+    randomly located as well.
+
+    On an AMD64 processor where a library was not compiled with -fPIC, this will cause an error
+    such as: "relocation R_X86_64_32 against `......' can not be used when making a shared object;"
+
+    To test that you have built PIE executable, install scanelf, part of paxutils, and use:
+
+    	scanelf -e ./briskcoin
+
+    The output should contain:
+
+     TYPE
+    ET_DYN
+
+* Non-executable Stack
+    If the stack is executable then trivial stack based buffer overflow exploits are possible if
+    vulnerable buffers are found. By default, briskcoin should be built with a non-executable stack
+    but if one of the libraries it uses asks for an executable stack or someone makes a mistake
+    and uses a compiler extension which requires an executable stack, it will silently build an
+    executable without the non-executable stack protection.
+
+    To verify that the stack is non-executable after compiling use:
+    `scanelf -e ./briskcoin`
+
+    the output should contain:
+	STK/REL/PTL
+	RW- R-- RW-
+
+    The STK RW- means that the stack is readable and writeable but not executable.
 
 Disable-wallet mode
 --------------------
-When the intention is to only run a P2P node, without a wallet, Bitcoin Core can
-be compiled in disable-wallet mode with:
+When the intention is to run only a P2P node without a wallet, briskcoin may be compiled in
+disable-wallet mode with:
 
-    cmake -B build -DENABLE_WALLET=OFF
+    ./configure --disable-wallet
 
-In this case there is no dependency on SQLite or Berkeley DB.
+In this case there is no dependency on Berkeley DB 4.8.
 
-Mining is also possible in disable-wallet mode using the `getblocktemplate` RPC call.
+Mining is also possible in disable-wallet mode, but only using the `getblocktemplate` RPC
+call not `getwork`.
 
 Additional Configure Flags
 --------------------------
 A list of additional configure flags can be displayed with:
 
-    cmake -B build -LH
+    ./configure --help
 
 
 Setup and Build Example: Arch Linux
 -----------------------------------
-This example lists the steps necessary to setup and build a command line only distribution of the latest changes on Arch Linux:
+This example lists the steps necessary to setup and build a command line only, non-wallet distribution of the latest changes on Arch Linux:
 
-    pacman --sync --needed cmake boost gcc git libevent make pkgconf python sqlite
-    git clone https://github.com/bitcoin/bitcoin.git
-    cd bitcoin/
-    cmake -B build
-    cmake --build build
-    ctest --test-dir build
-    ./build/src/bitcoind
+    pacman -S git base-devel boost libevent python
+    git clone https://github.com/briskcoin/briskcoin.git
+    cd briskcoin/
+    ./autogen.sh
+    ./configure --disable-wallet --without-gui --without-miniupnpc
+    make check
 
-If you intend to work with legacy Berkeley DB wallets, see [Berkeley DB](#berkeley-db) section.
+Note:
+Enabling wallet support requires either compiling against a Berkeley DB newer than 4.8 (package `db`) using `--with-incompatible-bdb`,
+or building and depending on a local version of Berkeley DB 4.8. The readily available Arch Linux packages are currently built using
+`--with-incompatible-bdb` according to the [PKGBUILD](https://projects.archlinux.org/svntogit/community.git/tree/bitcoin/trunk/PKGBUILD).
+As mentioned above, when maintaining portability of the wallet between the standard Briskcoin Core distributions and independently built
+node software is desired, Berkeley DB 4.8 must be used.
+
+
+ARM Cross-compilation
+-------------------
+These steps can be performed on, for example, an Ubuntu VM. The depends system
+will also work on other Linux distributions, however the commands for
+installing the toolchain will be different.
+
+Make sure you install the build requirements mentioned above.
+Then, install the toolchain and curl:
+
+    sudo apt-get install g++-arm-linux-gnueabihf curl
+
+To build executables for ARM:
+
+    cd depends
+    make HOST=arm-linux-gnueabihf NO_QT=1
+    cd ..
+    ./configure --prefix=$PWD/depends/arm-linux-gnueabihf --enable-glibc-back-compat --enable-reduce-exports LDFLAGS=-static-libstdc++
+    make
+
+
+For further documentation on the depends system see [README.md](../depends/README.md) in the depends directory.
+
+Building on FreeBSD
+--------------------
+
+(Updated as of FreeBSD 11.0)
+
+Clang is installed by default as `cc` compiler, this makes it easier to get
+started than on [OpenBSD](build-openbsd.md). Installing dependencies:
+
+    pkg install autoconf automake libtool pkgconf
+    pkg install boost-libs openssl libevent
+    pkg install gmake
+
+You need to use GNU make (`gmake`) instead of `make`.
+(`libressl` instead of `openssl` will also work)
+
+For the wallet (optional):
+
+    ./contrib/install_db4.sh `pwd`
+    setenv BDB_PREFIX $PWD/db4
+
+Then build using:
+
+    ./autogen.sh
+    ./configure BDB_CFLAGS="-I${BDB_PREFIX}/include" BDB_LIBS="-L${BDB_PREFIX}/lib -ldb_cxx"
+    gmake
+
+*Note on debugging*: The version of `gdb` installed by default is [ancient and considered harmful](https://wiki.freebsd.org/GdbRetirement).
+It is not suitable for debugging a multi-threaded C++ program, not even for getting backtraces. Please install the package `gdb` and
+use the versioned gdb command e.g. `gdb7111`.

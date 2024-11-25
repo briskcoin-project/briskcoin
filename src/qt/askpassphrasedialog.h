@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2020 The Bitcoin Core developers
+// Copyright (c) 2011-2017 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,8 +6,6 @@
 #define BITCOIN_QT_ASKPASSPHRASEDIALOG_H
 
 #include <QDialog>
-
-#include <support/allocators/secure.h>
 
 class WalletModel;
 
@@ -26,22 +24,21 @@ public:
         Encrypt,    /**< Ask passphrase twice and encrypt */
         Unlock,     /**< Ask passphrase and unlock */
         ChangePass, /**< Ask old passphrase + new passphrase twice */
-        UnlockMigration, /**< Ask passphrase for unlocking during migration */
+        Decrypt     /**< Ask passphrase and decrypt wallet */
     };
 
-    explicit AskPassphraseDialog(Mode mode, QWidget *parent, SecureString* passphrase_out = nullptr);
+    explicit AskPassphraseDialog(Mode mode, QWidget *parent);
     ~AskPassphraseDialog();
 
-    void accept() override;
+    void accept();
 
     void setModel(WalletModel *model);
 
 private:
     Ui::AskPassphraseDialog *ui;
     Mode mode;
-    WalletModel* model{nullptr};
-    bool fCapsLock{false};
-    SecureString* m_passphrase_out;
+    WalletModel *model;
+    bool fCapsLock;
 
 private Q_SLOTS:
     void textChanged();
@@ -49,8 +46,8 @@ private Q_SLOTS:
     void toggleShowPassword(bool);
 
 protected:
-    bool event(QEvent *event) override;
-    bool eventFilter(QObject *object, QEvent *event) override;
+    bool event(QEvent *event);
+    bool eventFilter(QObject *object, QEvent *event);
 };
 
 #endif // BITCOIN_QT_ASKPASSPHRASEDIALOG_H

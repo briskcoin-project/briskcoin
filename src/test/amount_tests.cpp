@@ -1,23 +1,20 @@
-// Copyright (c) 2016-2021 The Bitcoin Core developers
+// Copyright (c) 2016-2017 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <consensus/amount.h>
+#include <amount.h>
 #include <policy/feerate.h>
-
-#include <limits>
+#include <test/test_bitcoin.h>
 
 #include <boost/test/unit_test.hpp>
 
-BOOST_AUTO_TEST_SUITE(amount_tests)
+BOOST_FIXTURE_TEST_SUITE(amount_tests, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(MoneyRangeTest)
 {
     BOOST_CHECK_EQUAL(MoneyRange(CAmount(-1)), false);
-    BOOST_CHECK_EQUAL(MoneyRange(CAmount(0)), true);
-    BOOST_CHECK_EQUAL(MoneyRange(CAmount(1)), true);
-    BOOST_CHECK_EQUAL(MoneyRange(MAX_MONEY), true);
     BOOST_CHECK_EQUAL(MoneyRange(MAX_MONEY + CAmount(1)), false);
+    BOOST_CHECK_EQUAL(MoneyRange(CAmount(1)), true);
 }
 
 BOOST_AUTO_TEST_CASE(GetFeeTest)
@@ -26,43 +23,43 @@ BOOST_AUTO_TEST_CASE(GetFeeTest)
 
     feeRate = CFeeRate(0);
     // Must always return 0
-    BOOST_CHECK_EQUAL(feeRate.GetFee(0), CAmount(0));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(1e5), CAmount(0));
+    BOOST_CHECK_EQUAL(feeRate.GetFee(0), 0);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(1e5), 0);
 
     feeRate = CFeeRate(1000);
     // Must always just return the arg
-    BOOST_CHECK_EQUAL(feeRate.GetFee(0), CAmount(0));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(1), CAmount(1));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(121), CAmount(121));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(999), CAmount(999));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(1e3), CAmount(1e3));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(9e3), CAmount(9e3));
+    BOOST_CHECK_EQUAL(feeRate.GetFee(0), 0);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(1), 1);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(121), 121);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(999), 999);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(1e3), 1e3);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(9e3), 9e3);
 
     feeRate = CFeeRate(-1000);
     // Must always just return -1 * arg
-    BOOST_CHECK_EQUAL(feeRate.GetFee(0), CAmount(0));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(1), CAmount(-1));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(121), CAmount(-121));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(999), CAmount(-999));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(1e3), CAmount(-1e3));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(9e3), CAmount(-9e3));
+    BOOST_CHECK_EQUAL(feeRate.GetFee(0), 0);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(1), -1);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(121), -121);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(999), -999);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(1e3), -1e3);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(9e3), -9e3);
 
     feeRate = CFeeRate(123);
-    // Rounds up the result, if not integer
-    BOOST_CHECK_EQUAL(feeRate.GetFee(0), CAmount(0));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(8), CAmount(1)); // Special case: returns 1 instead of 0
-    BOOST_CHECK_EQUAL(feeRate.GetFee(9), CAmount(2));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(121), CAmount(15));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(122), CAmount(16));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(999), CAmount(123));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(1e3), CAmount(123));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(9e3), CAmount(1107));
+    // Truncates the result, if not integer
+    BOOST_CHECK_EQUAL(feeRate.GetFee(0), 0);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(8), 1); // Special case: returns 1 instead of 0
+    BOOST_CHECK_EQUAL(feeRate.GetFee(9), 1);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(121), 14);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(122), 15);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(999), 122);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(1e3), 123);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(9e3), 1107);
 
     feeRate = CFeeRate(-123);
     // Truncates the result, if not integer
-    BOOST_CHECK_EQUAL(feeRate.GetFee(0), CAmount(0));
-    BOOST_CHECK_EQUAL(feeRate.GetFee(8), CAmount(-1)); // Special case: returns -1 instead of 0
-    BOOST_CHECK_EQUAL(feeRate.GetFee(9), CAmount(-1));
+    BOOST_CHECK_EQUAL(feeRate.GetFee(0), 0);
+    BOOST_CHECK_EQUAL(feeRate.GetFee(8), -1); // Special case: returns -1 instead of 0
+    BOOST_CHECK_EQUAL(feeRate.GetFee(9), -1);
 
     // check alternate constructor
     feeRate = CFeeRate(1000);
@@ -70,9 +67,6 @@ BOOST_AUTO_TEST_CASE(GetFeeTest)
     BOOST_CHECK_EQUAL(feeRate.GetFee(100), altFeeRate.GetFee(100));
 
     // Check full constructor
-    BOOST_CHECK(CFeeRate(CAmount(-1), 0) == CFeeRate(0));
-    BOOST_CHECK(CFeeRate(CAmount(0), 0) == CFeeRate(0));
-    BOOST_CHECK(CFeeRate(CAmount(1), 0) == CFeeRate(0));
     // default value
     BOOST_CHECK(CFeeRate(CAmount(-1), 1000) == CFeeRate(-1));
     BOOST_CHECK(CFeeRate(CAmount(0), 1000) == CFeeRate(0));
@@ -84,33 +78,7 @@ BOOST_AUTO_TEST_CASE(GetFeeTest)
     BOOST_CHECK(CFeeRate(CAmount(26), 789) == CFeeRate(32));
     BOOST_CHECK(CFeeRate(CAmount(27), 789) == CFeeRate(34));
     // Maximum size in bytes, should not crash
-    CFeeRate(MAX_MONEY, std::numeric_limits<uint32_t>::max()).GetFeePerK();
-
-    // check multiplication operator
-    // check multiplying by zero
-    feeRate = CFeeRate(1000);
-    BOOST_CHECK(0 * feeRate == CFeeRate(0));
-    BOOST_CHECK(feeRate * 0 == CFeeRate(0));
-    // check multiplying by a positive integer
-    BOOST_CHECK(3 * feeRate == CFeeRate(3000));
-    BOOST_CHECK(feeRate * 3 == CFeeRate(3000));
-    // check multiplying by a negative integer
-    BOOST_CHECK(-3 * feeRate == CFeeRate(-3000));
-    BOOST_CHECK(feeRate * -3 == CFeeRate(-3000));
-    // check commutativity
-    BOOST_CHECK(2 * feeRate == feeRate * 2);
-    // check with large numbers
-    int largeNumber = 1000000;
-    BOOST_CHECK(largeNumber * feeRate == feeRate * largeNumber);
-    // check boundary values
-    int maxInt = std::numeric_limits<int>::max();
-    feeRate = CFeeRate(maxInt);
-    BOOST_CHECK(feeRate * 2 == CFeeRate(static_cast<int64_t>(maxInt) * 2));
-    BOOST_CHECK(2 * feeRate == CFeeRate(static_cast<int64_t>(maxInt) * 2));
-    // check with zero fee rate
-    feeRate = CFeeRate(0);
-    BOOST_CHECK(feeRate * 5 == CFeeRate(0));
-    BOOST_CHECK(5 * feeRate == CFeeRate(0));
+    CFeeRate(MAX_MONEY, std::numeric_limits<size_t>::max() >> 1).GetFeePerK();
 }
 
 BOOST_AUTO_TEST_CASE(BinaryOperatorTest)
@@ -125,7 +93,7 @@ BOOST_AUTO_TEST_CASE(BinaryOperatorTest)
     BOOST_CHECK(a <= a);
     BOOST_CHECK(b >= a);
     BOOST_CHECK(b >= b);
-    // a should be 0.00000002 BTC/kvB now
+    // a should be 0.00000002 BTC/kB now
     a += a;
     BOOST_CHECK(a == b);
 }
@@ -134,9 +102,7 @@ BOOST_AUTO_TEST_CASE(ToStringTest)
 {
     CFeeRate feeRate;
     feeRate = CFeeRate(1);
-    BOOST_CHECK_EQUAL(feeRate.ToString(), "0.00000001 BTC/kvB");
-    BOOST_CHECK_EQUAL(feeRate.ToString(FeeEstimateMode::BTC_KVB), "0.00000001 BTC/kvB");
-    BOOST_CHECK_EQUAL(feeRate.ToString(FeeEstimateMode::SAT_VB), "0.001 sat/vB");
+    BOOST_CHECK_EQUAL(feeRate.ToString(), "0.00000001 BTC/kB");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

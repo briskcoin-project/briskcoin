@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Bitcoin Core developers
+// Copyright (c) 2011-2016 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -8,6 +8,7 @@
 #include <QFrame>
 #include <QMap>
 
+class BitcoinGUI;
 class ClientModel;
 class PlatformStyle;
 class SendCoinsRecipient;
@@ -30,41 +31,35 @@ class WalletFrame : public QFrame
     Q_OBJECT
 
 public:
-    explicit WalletFrame(const PlatformStyle* platformStyle, QWidget* parent);
+    explicit WalletFrame(const PlatformStyle *platformStyle, BitcoinGUI *_gui = 0);
     ~WalletFrame();
 
     void setClientModel(ClientModel *clientModel);
 
-    bool addView(WalletView* walletView);
-    void setCurrentWallet(WalletModel* wallet_model);
-    void removeWallet(WalletModel* wallet_model);
+    bool addWallet(const QString& name, WalletModel *walletModel);
+    bool setCurrentWallet(const QString& name);
+    bool removeWallet(const QString &name);
     void removeAllWallets();
 
     bool handlePaymentRequest(const SendCoinsRecipient& recipient);
 
     void showOutOfSyncWarning(bool fShow);
 
-    QSize sizeHint() const override { return m_size_hint; }
-
 Q_SIGNALS:
-    void createWalletButtonClicked();
-    void message(const QString& title, const QString& message, unsigned int style);
-    void currentWalletSet();
+    /** Notify that the user has requested more information about the out-of-sync warning */
+    void requestedSyncWarningInfo();
 
 private:
     QStackedWidget *walletStack;
+    BitcoinGUI *gui;
     ClientModel *clientModel;
-    QMap<WalletModel*, WalletView*> mapWalletViews;
+    QMap<QString, WalletView*> mapWalletViews;
 
     bool bOutOfSync;
 
     const PlatformStyle *platformStyle;
 
-    const QSize m_size_hint;
-
-public:
-    WalletView* currentWalletView() const;
-    WalletModel* currentWalletModel() const;
+    WalletView *currentWalletView();
 
 public Q_SLOTS:
     /** Switch to overview (home) page */
@@ -81,11 +76,8 @@ public Q_SLOTS:
     /** Show Sign/Verify Message dialog and switch to verify message tab */
     void gotoVerifyMessageTab(QString addr = "");
 
-    /** Load Partially Signed Bitcoin Transaction */
-    void gotoLoadPSBT(bool from_clipboard = false);
-
     /** Encrypt the wallet */
-    void encryptWallet();
+    void encryptWallet(bool status);
     /** Backup the wallet */
     void backupWallet();
     /** Change encrypted wallet passphrase */
@@ -97,6 +89,8 @@ public Q_SLOTS:
     void usedSendingAddresses();
     /** Show used receiving addresses */
     void usedReceivingAddresses();
+    /** Pass on signal over requested out-of-sync-warning information */
+    void outOfSyncWarningClicked();
 };
 
 #endif // BITCOIN_QT_WALLETFRAME_H

@@ -107,7 +107,7 @@
              <string notr="true"/>
             </property>
             <property name="text">
-             <string>Inputs…</string>
+             <string>Inputs...</string>
             </property>
             <property name="autoDefault">
              <bool>false</bool>
@@ -201,9 +201,6 @@
              </property>
              <item>
               <layout class="QFormLayout" name="formLayoutCoinControl1">
-               <property name="labelAlignment">
-                <set>Qt::AlignLeft|Qt::AlignVCenter</set>
-               </property>
                <property name="horizontalSpacing">
                 <number>10</number>
                </property>
@@ -327,7 +324,36 @@
                   <enum>Qt::ActionsContextMenu</enum>
                  </property>
                  <property name="text">
-                  <string notr="true">0.00 BTC</string>
+                  <string notr="true">0.00 BKC</string>
+                 </property>
+                 <property name="textInteractionFlags">
+                  <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="labelCoinControlLowOutputText">
+                 <property name="font">
+                  <font>
+                   <weight>75</weight>
+                   <bold>true</bold>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Dust:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QLabel" name="labelCoinControlLowOutput">
+                 <property name="cursor">
+                  <cursorShape>IBeamCursor</cursorShape>
+                 </property>
+                 <property name="contextMenuPolicy">
+                  <enum>Qt::ActionsContextMenu</enum>
+                 </property>
+                 <property name="text">
+                  <string notr="true">no</string>
                  </property>
                  <property name="textInteractionFlags">
                   <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -378,7 +404,7 @@
                   <enum>Qt::ActionsContextMenu</enum>
                  </property>
                  <property name="text">
-                  <string notr="true">0.00 BTC</string>
+                  <string notr="true">0.00 BKC</string>
                  </property>
                  <property name="textInteractionFlags">
                   <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -389,9 +415,6 @@
              </item>
              <item>
               <layout class="QFormLayout" name="formLayoutCoinControl4">
-               <property name="labelAlignment">
-                <set>Qt::AlignLeft|Qt::AlignVCenter</set>
-               </property>
                <property name="horizontalSpacing">
                 <number>10</number>
                </property>
@@ -432,7 +455,7 @@
                   <enum>Qt::ActionsContextMenu</enum>
                  </property>
                  <property name="text">
-                  <string notr="true">0.00 BTC</string>
+                  <string notr="true">0.00 BKC</string>
                  </property>
                  <property name="textInteractionFlags">
                   <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -461,7 +484,7 @@
                   <enum>Qt::ActionsContextMenu</enum>
                  </property>
                  <property name="text">
-                  <string notr="true">0.00 BTC</string>
+                  <string notr="true">0.00 BKC</string>
                  </property>
                  <property name="textInteractionFlags">
                   <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -715,7 +738,7 @@
               <item>
                <widget class="QPushButton" name="buttonChooseFee">
                 <property name="text">
-                 <string>Choose…</string>
+                 <string>Choose...</string>
                 </property>
                </widget>
               </item>
@@ -774,7 +797,7 @@
           <item>
            <widget class="QPushButton" name="buttonMinimizeFee">
             <property name="toolTip">
-             <string>Hide transaction fee settings</string>
+             <string>collapse fee-settings</string>
             </property>
             <property name="text">
              <string>Hide</string>
@@ -825,9 +848,7 @@
                  <item>
                   <widget class="QLabel" name="labelCustomPerKilobyte">
                    <property name="toolTip">
-                    <string>Specify a custom fee per kB (1,000 bytes) of the transaction's virtual size.
-
-Note:  Since the fee is calculated on a per-byte basis, a fee rate of "100 satoshis per kvB" for a transaction size of 500 virtual bytes (half of 1 kvB) would ultimately yield a fee of only 50 satoshis.</string>
+                    <string>If the custom fee is set to 1000 satoshis and the transaction is only 250 bytes, then &quot;per kilobyte&quot; only pays 250 satoshis in fee, while &quot;total at least&quot; pays 1000 satoshis. For transactions bigger than a kilobyte both pay by kilobyte.</string>
                    </property>
                    <property name="text">
                     <string>per kilobyte</string>
@@ -855,15 +876,28 @@ Note:  Since the fee is calculated on a per-byte basis, a fee rate of "100 satos
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayoutFee8">
                  <item>
-                  <widget class="QLabel" name="labelCustomFeeWarning">
+                  <widget class="QCheckBox" name="checkBoxMinimumFee">
+                   <property name="toolTip">
+                    <string>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for briskcoin transactions than the network can process.</string>
+                   </property>
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="labelMinFeeWarning">
                    <property name="enabled">
                     <bool>true</bool>
                    </property>
                    <property name="toolTip">
-                    <string>When there is less transaction volume than space in the blocks, miners as well as relaying nodes may enforce a minimum fee. Paying only this minimum fee is just fine, but be aware that this can result in a never confirming transaction once there is more demand for bitcoin transactions than the network can process.</string>
+                    <string>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for briskcoin transactions than the network can process.</string>
                    </property>
                    <property name="text">
-                    <string>A too low fee might result in a never confirming transaction (read the tooltip)</string>
+                    <string>(read the tooltip)</string>
+                   </property>
+                   <property name="margin">
+                    <number>5</number>
                    </property>
                   </widget>
                  </item>
@@ -956,6 +990,9 @@ Note:  Since the fee is calculated on a per-byte basis, a fee rate of "100 satos
                    <property name="text">
                     <string/>
                    </property>
+                   <property name="margin">
+                    <number>2</number>
+                   </property>
                   </widget>
                  </item>
                  <item>
@@ -968,7 +1005,10 @@ Note:  Since the fee is calculated on a per-byte basis, a fee rate of "100 satos
                  <item>
                   <widget class="QLabel" name="labelSmartFee2">
                    <property name="text">
-                    <string>(Smart fee not initialized yet. This usually takes a few blocks…)</string>
+                    <string>(Smart fee not initialized yet. This usually takes a few blocks...)</string>
+                   </property>
+                   <property name="margin">
+                    <number>2</number>
                    </property>
                   </widget>
                  </item>
@@ -996,7 +1036,23 @@ Note:  Since the fee is calculated on a per-byte basis, a fee rate of "100 satos
                      <property name="text">
                       <string>Confirmation time target:</string>
                      </property>
+                     <property name="margin">
+                      <number>2</number>
+                     </property>
                     </widget>
+                   </item>
+                   <item>
+                    <spacer name="verticalSpacer_3">
+                     <property name="orientation">
+                      <enum>Qt::Vertical</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>1</width>
+                       <height>1</height>
+                      </size>
+                     </property>
+                    </spacer>
                    </item>
                   </layout>
                  </item>
@@ -1167,7 +1223,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee rate of "100 satos
         <number>3</number>
        </property>
        <item>
-        <widget class="QLabel" name="labelBalanceName">
+        <widget class="QLabel" name="label">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -1191,7 +1247,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee rate of "100 satos
           <cursorShape>IBeamCursor</cursorShape>
          </property>
          <property name="text">
-          <string notr="true">123.456 BTC</string>
+          <string notr="true">123.456 BKC</string>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>

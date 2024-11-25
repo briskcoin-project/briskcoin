@@ -1,327 +1,299 @@
 Release Process
 ====================
 
-## Branch updates
+Before every release candidate:
 
-### Before every release candidate
+* Update translations (ping wumpus on IRC) see [translation_process.md](https://github.com/briskcoin/briskcoin/blob/master/doc/translation_process.md#synchronising-translations).
 
-* Update release candidate version in `CMakeLists.txt` (`CLIENT_VERSION_RC`).
-* Update manpages (after rebuilding the binaries), see [gen-manpages.py](/contrib/devtools/README.md#gen-manpagespy).
-* Update bitcoin.conf and commit changes if they exist, see [gen-bitcoin-conf.sh](/contrib/devtools/README.md#gen-bitcoin-confsh).
+* Update manpages, see [gen-manpages.sh](https://github.com/briskcoin/briskcoin/blob/master/contrib/devtools/README.md#gen-manpagessh).
 
-### Before every major and minor release
+Before every minor and major release:
 
 * Update [bips.md](bips.md) to account for changes since the last release.
-* Update version in `CMakeLists.txt` (don't forget to set `CLIENT_VERSION_RC` to `0`).
-* Update manpages (see previous section)
-* Write release notes (see "Write the release notes" below) in doc/release-notes.md. If necessary,
-  archive the previous release notes as doc/release-notes/release-notes-${VERSION}.md.
+* Update version in `configure.ac` (don't forget to set `CLIENT_VERSION_IS_RELEASE` to `true`)
+* Write release notes (see below)
+* Update `src/chainparams.cpp` nMinimumChainWork with information from the getblockchaininfo rpc.
+* Update `src/chainparams.cpp` defaultAssumeValid  with information from the getblockhash rpc.
+  - The selected value must not be orphaned so it may be useful to set the value two blocks back from the tip.
+  - Testnet should be set some tens of thousands back from the tip due to reorgs there.
+  - This update should be reviewed with a reindex-chainstate with assumevalid=0 to catch any defect
+     that causes rejection of blocks in the past history.
 
-### Before every major release
+Before every major release:
 
-* On both the master branch and the new release branch:
-  - update `CLIENT_VERSION_MAJOR` in [`CMakeLists.txt`](../CMakeLists.txt)
-* On the new release branch in [`CMakeLists.txt`](../CMakeLists.txt)(see [this commit](https://github.com/bitcoin/bitcoin/commit/742f7dd)):
-  - set `CLIENT_VERSION_MINOR` to `0`
-  - set `CLIENT_VERSION_BUILD` to `0`
-  - set `CLIENT_VERSION_IS_RELEASE` to `true`
-
-#### Before branch-off
-
-* Update translations see [translation_process.md](/doc/translation_process.md#synchronising-translations).
-* Update hardcoded [seeds](/contrib/seeds/README.md), see [this pull request](https://github.com/bitcoin/bitcoin/pull/27488) for an example.
-* Update the following variables in [`src/kernel/chainparams.cpp`](/src/kernel/chainparams.cpp) for mainnet, testnet, and signet:
-  - `m_assumed_blockchain_size` and `m_assumed_chain_state_size` with the current size plus some overhead (see
-    [this](#how-to-calculate-assumed-blockchain-and-chain-state-size) for information on how to calculate them).
-  - The following updates should be reviewed with `reindex-chainstate` and `assumevalid=0` to catch any defect
-    that causes rejection of blocks in the past history.
-  - `chainTxData` with statistics about the transaction count and rate. Use the output of the `getchaintxstats` RPC with an
-    `nBlocks` of 4096 (28 days) and a `bestblockhash` of RPC `getbestblockhash`; see
-    [this pull request](https://github.com/bitcoin/bitcoin/pull/28591) for an example. Reviewers can verify the results by running
-    `getchaintxstats <window_block_count> <window_final_block_hash>` with the `window_block_count` and `window_final_block_hash` from your output.
-  - `defaultAssumeValid` with the output of RPC `getblockhash` using the `height` of `window_final_block_height` above
-    (and update the block height comment with that height), taking into account the following:
-    - On mainnet, the selected value must not be orphaned, so it may be useful to set the height two blocks back from the tip.
-    - Testnet should be set with a height some tens of thousands back from the tip, due to reorgs there.
-  - `nMinimumChainWork` with the "chainwork" value of RPC `getblockheader` using the same height as that selected for the previous step.
-* Consider updating the headers synchronization tuning parameters to account for the chainparams updates.
-  The optimal values change very slowly, so this isn't strictly necessary every release, but doing so doesn't hurt.
-  - Update configuration variables in [`contrib/devtools/headerssync-params.py`](/contrib/devtools/headerssync-params.py):
-    - Set `TIME` to the software's expected supported lifetime -- after this time, its ability to defend against a high bandwidth timewarp attacker will begin to degrade.
-    - Set `MINCHAINWORK_HEADERS` to the height used for the `nMinimumChainWork` calculation above.
-    - Check that the other variables still look reasonable.
-  - Run the script. It works fine in CPython, but PyPy is much faster (seconds instead of minutes): `pypy3 contrib/devtools/headerssync-params.py`.
-  - Paste the output defining `HEADER_COMMITMENT_PERIOD` and `REDOWNLOAD_BUFFER_SIZE` into the top of [`src/headerssync.cpp`](/src/headerssync.cpp).
-- Clear the release notes and move them to the wiki (see "Write the release notes" below).
-- Translations on Transifex:
-    - Pull translations from Transifex into the master branch.
-    - Create [a new resource](https://www.transifex.com/bitcoin/bitcoin/content/) named after the major version with the slug `qt-translation-<RRR>x`, where `RRR` is the major branch number padded with zeros. Use `src/qt/locale/bitcoin_en.xlf` to create it.
-    - In the project workflow settings, ensure that [Translation Memory Fill-up](https://help.transifex.com/en/articles/6224817-setting-up-translation-memory-fill-up) is enabled and that [Translation Memory Context Matching](https://help.transifex.com/en/articles/6224753-translation-memory-with-context) is disabled.
-    - Update the Transifex slug in [`.tx/config`](/.tx/config) to the slug of the resource created in the first step. This identifies which resource the translations will be synchronized from.
-    - Make an announcement that translators can start translating for the new version. You can use one of the [previous announcements](https://www.transifex.com/bitcoin/communication/) as a template.
-    - Change the auto-update URL for the resource to `master`, e.g. `https://raw.githubusercontent.com/bitcoin/bitcoin/master/src/qt/locale/bitcoin_en.xlf`. (Do this only after the previous steps, to prevent an auto-update from interfering.)
-
-#### After branch-off (on the major release branch)
-
-- Update the versions.
-- Create the draft, named "*version* Release Notes Draft", as a [collaborative wiki](https://github.com/bitcoin-core/bitcoin-devwiki/wiki/_new).
-- Clear the release notes: `cp doc/release-notes-empty-template.md doc/release-notes.md`
-- Create a pinned meta-issue for testing the release candidate (see [this issue](https://github.com/bitcoin/bitcoin/issues/27621) for an example) and provide a link to it in the release announcements where useful.
-- Translations on Transifex
-    - Change the auto-update URL for the new major version's resource away from `master` and to the branch, e.g. `https://raw.githubusercontent.com/bitcoin/bitcoin/<branch>/src/qt/locale/bitcoin_en.xlf`. Do not forget this or it will keep tracking the translations on master instead, drifting away from the specific major release.
-- Prune inputs from the qa-assets repo (See [pruning
-  inputs](https://github.com/bitcoin-core/qa-assets#pruning-inputs)).
-
-#### Before final release
-
-- Merge the release notes from [the wiki](https://github.com/bitcoin-core/bitcoin-devwiki/wiki/) into the branch.
-- Ensure the "Needs release note" label is removed from all relevant pull
-  requests and issues:
-  https://github.com/bitcoin/bitcoin/issues?q=label%3A%22Needs+release+note%22
-
-#### Tagging a release (candidate)
-
-To tag the version (or release candidate) in git, use the `make-tag.py` script from [bitcoin-maintainer-tools](https://github.com/bitcoin-core/bitcoin-maintainer-tools). From the root of the repository run:
-
-    ../bitcoin-maintainer-tools/make-tag.py v(new version, e.g. 25.0)
-
-This will perform a few last-minute consistency checks in the build system files, and if they pass, create a signed tag.
-
-## Building
+* Update hardcoded [seeds](/contrib/seeds/README.md), see [this pull request](https://github.com/briskcoin/briskcoin/pull/7415) for an example.
+* Update [`BLOCK_CHAIN_SIZE`](/src/qt/intro.cpp) to the current size plus some overhead.
+* Update `src/chainparams.cpp` chainTxData with statistics about the transaction count and rate.
+* Update version of `contrib/gitian-descriptors/*.yml`: usually one'd want to do this on master after branching off the release - but be sure to at least do it before a new major release
 
 ### First time / New builders
 
-Install Guix using one of the installation methods detailed in
-[contrib/guix/INSTALL.md](/contrib/guix/INSTALL.md).
+If you're using the automated script (found in [contrib/gitian-build.sh](/contrib/gitian-build.sh)), then at this point you should run it with the "--setup" command. Otherwise ignore this.
 
 Check out the source code in the following directory hierarchy.
 
     cd /path/to/your/toplevel/build
-    git clone https://github.com/bitcoin-core/guix.sigs.git
-    git clone https://github.com/bitcoin-core/bitcoin-detached-sigs.git
-    git clone https://github.com/bitcoin/bitcoin.git
+    git clone https://github.com/briskcoin/gitian.sigs.git
+    git clone https://github.com/briskcoin/briskcoin-detached-sigs.git
+    git clone https://github.com/devrandom/gitian-builder.git
+    git clone https://github.com/briskcoin/briskcoin.git
 
-### Write the release notes
+### Briskcoin maintainers/release engineers, suggestion for writing release notes
 
-Open a draft of the release notes for collaborative editing at https://github.com/bitcoin-core/bitcoin-devwiki/wiki.
+Write release notes. git shortlog helps a lot, for example:
 
-For the period during which the notes are being edited on the wiki, the version on the branch should be wiped and replaced with a link to the wiki which should be used for all announcements until `-final`.
+    git shortlog --no-merges v(current version, e.g. 0.7.2)..v(new version, e.g. 0.8.0)
+
+(or ping @wumpus on IRC, he has specific tooling to generate the list of merged pulls
+and sort them into categories based on labels)
 
 Generate list of authors:
 
-    git log --format='- %aN' v(current version, e.g. 25.0)..v(new version, e.g. 25.1) | grep -v 'merge-script' | sort -fiu
+    git log --format='%aN' "$*" | sort -ui | sed -e 's/^/- /'
 
-### Setup and perform Guix builds
+Tag version (or release candidate) in git
 
-Checkout the Bitcoin Core version you'd like to build:
+    git tag -s v(new version, e.g. 0.8.0)
 
-```sh
-pushd ./bitcoin
-SIGNER='(your builder key, ie bluematt, sipa, etc)'
-VERSION='(new version without v-prefix, e.g. 25.0)'
-git fetch origin "v${VERSION}"
-git checkout "v${VERSION}"
-popd
-```
+### Setup and perform Gitian builds
 
-Ensure your guix.sigs are up-to-date if you wish to `guix-verify` your builds
-against other `guix-attest` signatures.
+If you're using the automated script (found in [contrib/gitian-build.sh](/contrib/gitian-build.sh)), then at this point you should run it with the "--build" command. Otherwise ignore this.
 
-```sh
-git -C ./guix.sigs pull
-```
+Setup Gitian descriptors:
 
-### Create the macOS SDK tarball (first time, or when SDK version changes)
+    pushd ./briskcoin
+    export SIGNER=(your Gitian key, ie bluematt, sipa, etc)
+    export VERSION=(new version, e.g. 0.8.0)
+    git fetch
+    git checkout v${VERSION}
+    popd
 
-Create the macOS SDK tarball, see the [macdeploy
-instructions](/contrib/macdeploy/README.md#deterministic-macos-app-notes) for
-details.
+Ensure your gitian.sigs are up-to-date if you wish to gverify your builds against other Gitian signatures.
 
-### Build and attest to build outputs
+    pushd ./gitian.sigs
+    git pull
+    popd
 
-Follow the relevant Guix README.md sections:
-- [Building](/contrib/guix/README.md#building)
-- [Attesting to build outputs](/contrib/guix/README.md#attesting-to-build-outputs)
+Ensure gitian-builder is up-to-date:
 
-### Verify other builders' signatures to your own (optional)
+    pushd ./gitian-builder
+    git pull
+    popd
 
-- [Verifying build output attestations](/contrib/guix/README.md#verifying-build-output-attestations)
+### Fetch and create inputs: (first time, or when dependency versions change)
 
-### Commit your non codesigned signature to guix.sigs
+    pushd ./gitian-builder
+    mkdir -p inputs
+    wget -P inputs https://bitcoincore.org/cfields/osslsigncode-Backports-to-1.7.1.patch
+    wget -P inputs http://downloads.sourceforge.net/project/osslsigncode/osslsigncode/osslsigncode-1.7.1.tar.gz
+    popd
 
-```sh
-pushd ./guix.sigs
-git add "${VERSION}/${SIGNER}"/noncodesigned.SHA256SUMS{,.asc}
-git commit -m "Add attestations by ${SIGNER} for ${VERSION} non-codesigned"
-popd
-```
+Create the OS X SDK tarball, see the [OS X readme](README_osx.md) for details, and copy it into the inputs directory.
 
-Then open a Pull Request to the [guix.sigs repository](https://github.com/bitcoin-core/guix.sigs).
+### Optional: Seed the Gitian sources cache and offline git repositories
 
-## Codesigning
+By default, Gitian will fetch source files as needed. To cache them ahead of time:
 
-### macOS codesigner only: Create detached macOS signatures (assuming [signapple](https://github.com/achow101/signapple/) is installed and up to date with master branch)
+    pushd ./gitian-builder
+    make -C ../briskcoin/depends download SOURCES_PATH=`pwd`/cache/common
+    popd
 
-In the `guix-build-${VERSION}/output/x86_64-apple-darwin` and `guix-build-${VERSION}/output/arm64-apple-darwin` directories:
+Only missing files will be fetched, so this is safe to re-run for each build.
 
-    tar xf bitcoin-osx-unsigned.tar.gz
-    ./detached-sig-create.sh /path/to/codesign.p12
+NOTE: Offline builds must use the --url flag to ensure Gitian fetches only from local URLs. For example:
+
+    pushd ./gitian-builder
+    ./bin/gbuild --url briskcoin=/path/to/briskcoin,signature=/path/to/sigs {rest of arguments}
+    popd
+
+The gbuild invocations below <b>DO NOT DO THIS</b> by default.
+
+### Build and sign Briskcoin Core for Linux, Windows, and OS X:
+
+    pushd ./gitian-builder
+    ./bin/gbuild --num-make 2 --memory 3000 --commit briskcoin=v${VERSION} ../briskcoin/contrib/gitian-descriptors/gitian-linux.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-linux --destination ../gitian.sigs/ ../briskcoin/contrib/gitian-descriptors/gitian-linux.yml
+    mv build/out/briskcoin-*.tar.gz build/out/src/briskcoin-*.tar.gz ../
+
+    ./bin/gbuild --num-make 2 --memory 3000 --commit briskcoin=v${VERSION} ../briskcoin/contrib/gitian-descriptors/gitian-win.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-win-unsigned --destination ../gitian.sigs/ ../briskcoin/contrib/gitian-descriptors/gitian-win.yml
+    mv build/out/briskcoin-*-win-unsigned.tar.gz inputs/briskcoin-win-unsigned.tar.gz
+    mv build/out/briskcoin-*.zip build/out/briskcoin-*.exe ../
+
+    ./bin/gbuild --num-make 2 --memory 3000 --commit briskcoin=v${VERSION} ../briskcoin/contrib/gitian-descriptors/gitian-osx.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-unsigned --destination ../gitian.sigs/ ../briskcoin/contrib/gitian-descriptors/gitian-osx.yml
+    mv build/out/briskcoin-*-osx-unsigned.tar.gz inputs/briskcoin-osx-unsigned.tar.gz
+    mv build/out/briskcoin-*.tar.gz build/out/briskcoin-*.dmg ../
+    popd
+
+Build output expected:
+
+  1. source tarball (`briskcoin-${VERSION}.tar.gz`)
+  2. linux 32-bit and 64-bit dist tarballs (`briskcoin-${VERSION}-linux[32|64].tar.gz`)
+  3. windows 32-bit and 64-bit unsigned installers and dist zips (`briskcoin-${VERSION}-win[32|64]-setup-unsigned.exe`, `briskcoin-${VERSION}-win[32|64].zip`)
+  4. OS X unsigned installer and dist tarball (`briskcoin-${VERSION}-osx-unsigned.dmg`, `briskcoin-${VERSION}-osx64.tar.gz`)
+  5. Gitian signatures (in `gitian.sigs/${VERSION}-<linux|{win,osx}-unsigned>/(your Gitian key)/`)
+
+### Verify other gitian builders signatures to your own. (Optional)
+
+Add other gitian builders keys to your gpg keyring, and/or refresh keys.
+
+    gpg --import briskcoin/contrib/gitian-keys/*.pgp
+    gpg --refresh-keys
+
+Verify the signatures
+
+    pushd ./gitian-builder
+    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-linux ../briskcoin/contrib/gitian-descriptors/gitian-linux.yml
+    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-win-unsigned ../briskcoin/contrib/gitian-descriptors/gitian-win.yml
+    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-unsigned ../briskcoin/contrib/gitian-descriptors/gitian-osx.yml
+    popd
+
+### Next steps:
+
+Commit your signature to gitian.sigs:
+
+    pushd gitian.sigs
+    git add ${VERSION}-linux/${SIGNER}
+    git add ${VERSION}-win-unsigned/${SIGNER}
+    git add ${VERSION}-osx-unsigned/${SIGNER}
+    git commit -a
+    git push  # Assuming you can push to the gitian.sigs tree
+    popd
+
+Codesigner only: Create Windows/OS X detached signatures:
+- Only one person handles codesigning. Everyone else should skip to the next step.
+- Only once the Windows/OS X builds each have 3 matching signatures may they be signed with their respective release keys.
+
+Codesigner only: Sign the osx binary:
+
+    transfer briskcoin-osx-unsigned.tar.gz to osx for signing
+    tar xf briskcoin-osx-unsigned.tar.gz
+    ./detached-sig-create.sh -s "Key ID"
     Enter the keychain password and authorize the signature
-    signature-osx.tar.gz will be created
+    Move signature-osx.tar.gz back to the gitian host
 
-### Windows codesigner only: Create detached Windows signatures
+Codesigner only: Sign the windows binaries:
 
-In the `guix-build-${VERSION}/output/x86_64-w64-mingw32` directory:
-
-    tar xf bitcoin-win-unsigned.tar.gz
+    tar xf briskcoin-win-unsigned.tar.gz
     ./detached-sig-create.sh -key /path/to/codesign.key
     Enter the passphrase for the key when prompted
     signature-win.tar.gz will be created
 
-### Windows and macOS codesigners only: test code signatures
-It is advised to test that the code signature attaches properly prior to tagging by performing the `guix-codesign` step.
-However if this is done, once the release has been tagged in the bitcoin-detached-sigs repo, the `guix-codesign` step must be performed again in order for the guix attestation to be valid when compared against the attestations of non-codesigner builds. The directories created by `guix-codesign` will need to be cleared prior to running `guix-codesign` again.
+Codesigner only: Commit the detached codesign payloads:
 
-### Windows and macOS codesigners only: Commit the detached codesign payloads
+    cd ~/briskcoin-detached-sigs
+    checkout the appropriate branch for this release series
+    rm -rf *
+    tar xf signature-osx.tar.gz
+    tar xf signature-win.tar.gz
+    git add -a
+    git commit -m "point to ${VERSION}"
+    git tag -s v${VERSION} HEAD
+    git push the current branch and new tag
 
-```sh
-pushd ./bitcoin-detached-sigs
-# checkout or create the appropriate branch for this release series
-git checkout --orphan <branch>
-# if you are the macOS codesigner
-rm -rf osx
-tar xf signature-osx.tar.gz
-# if you are the windows codesigner
-rm -rf win
-tar xf signature-win.tar.gz
-git add -A
-git commit -m "<version>: {osx,win} signature for {rc,final}"
-git tag -s "v${VERSION}" HEAD
-git push the current branch and new tag
-popd
-```
+Non-codesigners: wait for Windows/OS X detached signatures:
 
-### Non-codesigners: wait for Windows and macOS detached signatures
+- Once the Windows/OS X builds each have 3 matching signatures, they will be signed with their respective release keys.
+- Detached signatures will then be committed to the [briskcoin-detached-sigs](https://github.com/briskcoin/briskcoin-detached-sigs) repository, which can be combined with the unsigned apps to create signed binaries.
 
-- Once the Windows and macOS builds each have 3 matching signatures, they will be signed with their respective release keys.
-- Detached signatures will then be committed to the [bitcoin-detached-sigs](https://github.com/bitcoin-core/bitcoin-detached-sigs) repository, which can be combined with the unsigned apps to create signed binaries.
+Create (and optionally verify) the signed OS X binary:
 
-### Create the codesigned build outputs
+    pushd ./gitian-builder
+    ./bin/gbuild -i --commit signature=v${VERSION} ../briskcoin/contrib/gitian-descriptors/gitian-osx-signer.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-signed --destination ../gitian.sigs/ ../briskcoin/contrib/gitian-descriptors/gitian-osx-signer.yml
+    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-signed ../briskcoin/contrib/gitian-descriptors/gitian-osx-signer.yml
+    mv build/out/briskcoin-osx-signed.dmg ../briskcoin-${VERSION}-osx.dmg
+    popd
 
-- [Codesigning build outputs](/contrib/guix/README.md#codesigning-build-outputs)
+Create (and optionally verify) the signed Windows binaries:
 
-### Verify other builders' signatures to your own (optional)
+    pushd ./gitian-builder
+    ./bin/gbuild -i --commit signature=v${VERSION} ../briskcoin/contrib/gitian-descriptors/gitian-win-signer.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-win-signed --destination ../gitian.sigs/ ../briskcoin/contrib/gitian-descriptors/gitian-win-signer.yml
+    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-win-signed ../briskcoin/contrib/gitian-descriptors/gitian-win-signer.yml
+    mv build/out/briskcoin-*win64-setup.exe ../briskcoin-${VERSION}-win64-setup.exe
+    mv build/out/briskcoin-*win32-setup.exe ../briskcoin-${VERSION}-win32-setup.exe
+    popd
 
-- [Verifying build output attestations](/contrib/guix/README.md#verifying-build-output-attestations)
+Commit your signature for the signed OS X/Windows binaries:
 
-### Commit your codesigned signature to guix.sigs (for the signed macOS/Windows binaries)
+    pushd gitian.sigs
+    git add ${VERSION}-osx-signed/${SIGNER}
+    git add ${VERSION}-win-signed/${SIGNER}
+    git commit -a
+    git push  # Assuming you can push to the gitian.sigs tree
+    popd
 
-```sh
-pushd ./guix.sigs
-git add "${VERSION}/${SIGNER}"/all.SHA256SUMS{,.asc}
-git commit -m "Add attestations by ${SIGNER} for ${VERSION} codesigned"
-popd
-```
+### After 3 or more people have gitian-built and their results match:
 
-Then open a Pull Request to the [guix.sigs repository](https://github.com/bitcoin-core/guix.sigs).
-
-## After 6 or more people have guix-built and their results match
-
-After verifying signatures, combine the `all.SHA256SUMS.asc` file from all signers into `SHA256SUMS.asc`:
+- Create `SHA256SUMS.asc` for the builds, and GPG-sign it:
 
 ```bash
-cat "$VERSION"/*/all.SHA256SUMS.asc > SHA256SUMS.asc
+sha256sum * > SHA256SUMS
 ```
 
+The list of files should be:
+```
+briskcoin-${VERSION}-aarch64-linux-gnu.tar.gz
+briskcoin-${VERSION}-arm-linux-gnueabihf.tar.gz
+briskcoin-${VERSION}-i686-pc-linux-gnu.tar.gz
+briskcoin-${VERSION}-x86_64-linux-gnu.tar.gz
+briskcoin-${VERSION}-osx64.tar.gz
+briskcoin-${VERSION}-osx.dmg
+briskcoin-${VERSION}.tar.gz
+briskcoin-${VERSION}-win32-setup.exe
+briskcoin-${VERSION}-win32.zip
+briskcoin-${VERSION}-win64-setup.exe
+briskcoin-${VERSION}-win64.zip
+```
+The `*-debug*` files generated by the gitian build contain debug symbols
+for troubleshooting by developers. It is assumed that anyone that is interested
+in debugging can run gitian to generate the files for themselves. To avoid
+end-user confusion about which file to pick, as well as save storage
+space *do not upload these to the briskcoin.org server, nor put them in the torrent*.
 
-- Upload to the bitcoincore.org server:
-    1. The contents of each `./bitcoin/guix-build-${VERSION}/output/${HOST}/` directory.
+- GPG-sign it, delete the unsigned file:
+```
+gpg --digest-algo sha256 --clearsign SHA256SUMS # outputs SHA256SUMS.asc
+rm SHA256SUMS
+```
+(the digest algorithm is forced to sha256 to avoid confusion of the `Hash:` header that GPG adds with the SHA256 used for the files)
+Note: check that SHA256SUMS itself doesn't end up in SHA256SUMS, which is a spurious/nonsensical entry.
 
-       Guix will output all of the results into host subdirectories, but the SHA256SUMS
-       file does not include these subdirectories. In order for downloads via torrent
-       to verify without directory structure modification, all of the uploaded files
-       need to be in the same directory as the SHA256SUMS file.
+- Upload zips and installers, as well as `SHA256SUMS.asc` from last step, to the briskcoin.org server
+  into `/var/www/bin/briskcoin-core-${VERSION}`
 
-       Wait until all of these files have finished uploading before uploading the SHA256SUMS(.asc) files.
+- A `.torrent` will appear in the directory after a few minutes. Optionally help seed this torrent. To get the `magnet:` URI use:
+```bash
+transmission-show -m <torrent file>
+```
+Insert the magnet URI into the announcement sent to mailing lists. This permits
+people without access to `briskcoin.org` to download the binary distribution.
+Also put it into the `optional_magnetlink:` slot in the YAML file for
+briskcoin.org (see below for briskcoin.org update instructions).
 
-    2. The `SHA256SUMS` file
+- Update briskcoin.org version
 
-    3. The `SHA256SUMS.asc` combined signature file you just created.
+  - First, check to see if the Briskcoin.org maintainers have prepared a
+    release: https://github.com/briskcoin/briskcoin/releases
 
-- After uploading release candidate binaries, notify the bitcoin-core-dev mailing list and
-  bitcoin-dev group that a release candidate is available for testing. Include a link to the release
-  notes draft.
+      - If they have, it will have previously failed their Travis CI
+        checks because the final release files weren't uploaded.
+        Trigger a Travis CI rebuild---if it passes, merge.
 
-- The server will automatically create an OpenTimestamps file and torrent of the directory.
+  - If they have not prepared a release, follow the Briskcoin.org release
+    instructions: https://github.com/briskcoin/briskcoin/blob/master/doc/release-notes.md
 
-- Optionally help seed this torrent. To get the `magnet:` URI use:
-
-  ```sh
-  transmission-show -m <torrent file>
-  ```
-
-  Insert the magnet URI into the announcement sent to mailing lists. This permits
-  people without access to `bitcoincore.org` to download the binary distribution.
-  Also put it into the `optional_magnetlink:` slot in the YAML file for
-  bitcoincore.org.
-
-- Archive the release notes for the new version to `doc/release-notes/release-notes-${VERSION}.md`
-  (branch `master` and branch of the release).
-
-- Update the bitcoincore.org website
-
-  - blog post
-
-  - maintained versions [table](https://github.com/bitcoin-core/bitcoincore.org/commits/master/_includes/posts/maintenance-table.md)
-
-  - RPC documentation update
-
-      - See https://github.com/bitcoin-core/bitcoincore.org/blob/master/contrib/doc-gen/
-
-
-- Update repositories
-
-  - Delete post-EOL [release branches](https://github.com/bitcoin/bitcoin/branches/all) and create a tag `v${branch_name}-final`.
-
-  - Delete ["Needs backport" labels](https://github.com/bitcoin/bitcoin/labels?q=backport) for non-existing branches.
-
-  - Update packaging repo
-
-      - Push the flatpak to flathub, e.g. https://github.com/flathub/org.bitcoincore.bitcoin-qt/pull/2
-
-      - Push the snap, see https://github.com/bitcoin-core/packaging/blob/main/snap/local/build.md
-
-  - Create a [new GitHub release](https://github.com/bitcoin/bitcoin/releases/new) with a link to the archived release notes
+  - After the pull request is merged, the website will automatically show the newest version within 15 minutes, as well
+    as update the OS download links. Ping @saivann/@harding (saivann/harding on Freenode) in case anything goes wrong
 
 - Announce the release:
 
-  - bitcoin-dev and bitcoin-core-dev mailing list
+  - discord channel
 
-  - Bitcoin Core announcements list https://bitcoincore.org/en/list/announcements/join/
+  - twitter @cpcuhain
 
-  - Bitcoin Core Twitter https://twitter.com/bitcoincoreorg
+  - briskcoin.org
 
   - Celebrate
-
-### Additional information
-
-#### <a name="how-to-calculate-assumed-blockchain-and-chain-state-size"></a>How to calculate `m_assumed_blockchain_size` and `m_assumed_chain_state_size`
-
-Both variables are used as a guideline for how much space the user needs on their drive in total, not just strictly for the blockchain.
-Note that all values should be taken from a **fully synced** node and have an overhead of 5-10% added on top of its base value.
-
-To calculate `m_assumed_blockchain_size`, take the size in GiB of these directories:
-- For `mainnet` -> the data directory, excluding the `/testnet3`, `/testnet4`, `/signet`, and `/regtest` directories and any overly large files, e.g. a huge `debug.log`
-- For `testnet` -> `/testnet3`
-- For `testnet4` -> `/testnet4`
-- For `signet` -> `/signet`
-
-To calculate `m_assumed_chain_state_size`, take the size in GiB of these directories:
-- For `mainnet` -> `/chainstate`
-- For `testnet` -> `/testnet3/chainstate`
-- For `testnet4` -> `/testnet4/chainstate`
-- For `signet` -> `/signet/chainstate`
-
-Notes:
-- When taking the size for `m_assumed_blockchain_size`, there's no need to exclude the `/chainstate` directory since it's a guideline value and an overhead will be added anyway.
-- The expected overhead for growth may change over time. Consider whether the percentage needs to be changed in response; if so, update it here in this section.

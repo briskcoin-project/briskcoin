@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2020 The Bitcoin Core developers
+// Copyright (c) 2009-2017 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,15 +9,28 @@
 #include <net.h>
 #include <serialize.h>
 
-namespace NetMsg {
+class CNetMsgMaker
+{
+public:
+    explicit CNetMsgMaker(int nVersionIn) : nVersion(nVersionIn){}
+
     template <typename... Args>
-    CSerializedNetMsg Make(std::string msg_type, Args&&... args)
+    CSerializedNetMsg Make(int nFlags, std::string sCommand, Args&&... args) const
     {
         CSerializedNetMsg msg;
-        msg.m_type = std::move(msg_type);
-        VectorWriter{msg.data, 0, std::forward<Args>(args)...};
+        msg.command = std::move(sCommand);
+        CVectorWriter{ SER_NETWORK, nFlags | nVersion, msg.data, 0, std::forward<Args>(args)... };
         return msg;
     }
-} // namespace NetMsg
+
+    template <typename... Args>
+    CSerializedNetMsg Make(std::string sCommand, Args&&... args) const
+    {
+        return Make(0, std::move(sCommand), std::forward<Args>(args)...);
+    }
+
+private:
+    const int nVersion;
+};
 
 #endif // BITCOIN_NETMESSAGEMAKER_H
