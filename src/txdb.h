@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_TXDB_H
-#define BITCOIN_TXDB_H
+#ifndef BRISKCOIN_TXDB_H
+#define BRISKCOIN_TXDB_H
 
 #include <coins.h>
 #include <dbwrapper.h>
@@ -25,13 +25,15 @@ class uint256;
 static const int64_t nDefaultDbCache = 450;
 //! -dbbatchsize default (bytes)
 static const int64_t nDefaultDbBatchSize = 16 << 20;
+//! max. -dbcache (MiB)
+static const int64_t nMaxDbCache = sizeof(void*) > 4 ? 16384 : 1024;
 //! min. -dbcache (MiB)
 static const int64_t nMinDbCache = 4;
 //! Max memory allocated to block tree DB specific cache, if no -txindex (MiB)
 static const int64_t nMaxBlockDBCache = 2;
 //! Max memory allocated to block tree DB specific cache, if -txindex (MiB)
 // Unlike for the UTXO database, for the txindex scenario the leveldb cache make
-// a meaningful difference: https://github.com/bitcoin/bitcoin/pull/8273#issuecomment-229601991
+// a meaningful difference: https://github.com/briskcoin/briskcoin/pull/8273#issuecomment-229601991
 static const int64_t nMaxTxIndexCache = 1024;
 //! Max memory allocated to all block filter index caches combined in MiB.
 static const int64_t max_filter_index_cache = 1024;
@@ -57,7 +59,7 @@ protected:
 public:
     explicit CCoinsViewDB(DBParams db_params, CoinsViewOptions options);
 
-    std::optional<Coin> GetCoin(const COutPoint& outpoint) const override;
+    bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
@@ -75,4 +77,4 @@ public:
     std::optional<fs::path> StoragePath() { return m_db->StoragePath(); }
 };
 
-#endif // BITCOIN_TXDB_H
+#endif // BRISKCOIN_TXDB_H

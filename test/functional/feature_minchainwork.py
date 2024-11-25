@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2022 The Bitcoin Core developers
+# Copyright (c) 2017-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test logic for setting nMinimumChainWork on command line.
@@ -18,13 +18,13 @@ only succeeds past a given node once its nMinimumChainWork has been exceeded.
 import time
 
 from test_framework.p2p import P2PInterface, msg_getheaders
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.util import assert_equal
 
 # 2 hashes required per regtest block (with no difficulty adjustment)
 REGTEST_WORK_PER_BLOCK = 2
 
-class MinimumChainWorkTest(BitcoinTestFramework):
+class MinimumChainWorkTest(BriskcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 3
@@ -110,7 +110,7 @@ class MinimumChainWorkTest(BitcoinTestFramework):
         self.stop_node(0)
         self.nodes[0].assert_start_raises_init_error(
             ["-minimumchainwork=test"],
-            expected_msg='Error: Invalid minimum work specified (test), must be up to 64 hex digits',
+            expected_msg='Error: Invalid non-hex (test) minimum chain work value specified',
         )
 
 

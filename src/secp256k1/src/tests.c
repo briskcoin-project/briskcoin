@@ -37,7 +37,7 @@
 
 #define CONDITIONAL_TEST(cnt, nam) if (COUNT < (cnt)) { printf("Skipping %s (iteration count too low)\n", nam); } else
 
-static int COUNT = 16;
+static int COUNT = 64;
 static secp256k1_context *CTX = NULL;
 static secp256k1_context *STATIC_CTX = NULL;
 
@@ -3671,7 +3671,8 @@ static void test_ge(void) {
     secp256k1_fe zfi2, zfi3;
 
     secp256k1_gej_set_infinity(&gej[0]);
-    secp256k1_ge_set_infinity(&ge[0]);
+    secp256k1_ge_clear(&ge[0]);
+    secp256k1_ge_set_gej_var(&ge[0], &gej[0]);
     for (i = 0; i < runs; i++) {
         int j, k;
         secp256k1_ge g;
@@ -3931,7 +3932,7 @@ static void test_add_neg_y_diff_x(void) {
      * of the sum to be wrong (since infinity has no xy coordinates).
      * HOWEVER, if the x-coordinates are different, infinity is the
      * wrong answer, and such degeneracies are exposed. This is the
-     * root of https://github.com/bitcoin-core/secp256k1/issues/257
+     * root of https://github.com/briskcoin-core/secp256k1/issues/257
      * which this test is a regression test for.
      *
      * These points were generated in sage as
@@ -3981,34 +3982,6 @@ static void test_add_neg_y_diff_x(void) {
     CHECK(secp256k1_gej_eq_ge_var(&sumj, &res));
 }
 
-static void test_ge_bytes(void) {
-    int i;
-
-    for (i = 0; i < COUNT + 1; i++) {
-        unsigned char buf[64];
-        secp256k1_ge p, q;
-
-        if (i == 0) {
-            secp256k1_ge_set_infinity(&p);
-        } else {
-            testutil_random_ge_test(&p);
-        }
-
-        if (!secp256k1_ge_is_infinity(&p)) {
-            secp256k1_ge_to_bytes(buf, &p);
-
-            secp256k1_ge_from_bytes(&q, buf);
-            CHECK(secp256k1_ge_eq_var(&p, &q));
-
-            secp256k1_ge_from_bytes_ext(&q, buf);
-            CHECK(secp256k1_ge_eq_var(&p, &q));
-        }
-        secp256k1_ge_to_bytes_ext(buf, &p);
-        secp256k1_ge_from_bytes_ext(&q, buf);
-        CHECK(secp256k1_ge_eq_var(&p, &q));
-    }
-}
-
 static void run_ge(void) {
     int i;
     for (i = 0; i < COUNT * 32; i++) {
@@ -4016,7 +3989,6 @@ static void run_ge(void) {
     }
     test_add_neg_y_diff_x();
     test_intialized_inf();
-    test_ge_bytes();
 }
 
 static void test_gej_cmov(const secp256k1_gej *a, const secp256k1_gej *b) {
@@ -4796,12 +4768,12 @@ static void test_ecmult_multi(secp256k1_scratch *scratch, secp256k1_ecmult_multi
         testutil_random_ge_test(&pt[ncount]);
     }
 
-    secp256k1_scalar_set_int(&sc[0], 0);
+    secp256k1_scalar_clear(&sc[0]);
     CHECK(ecmult_multi(&CTX->error_callback, scratch, &r, &secp256k1_scalar_zero, ecmult_multi_callback, &data, 20));
-    secp256k1_scalar_set_int(&sc[1], 0);
-    secp256k1_scalar_set_int(&sc[2], 0);
-    secp256k1_scalar_set_int(&sc[3], 0);
-    secp256k1_scalar_set_int(&sc[4], 0);
+    secp256k1_scalar_clear(&sc[1]);
+    secp256k1_scalar_clear(&sc[2]);
+    secp256k1_scalar_clear(&sc[3]);
+    secp256k1_scalar_clear(&sc[4]);
     CHECK(ecmult_multi(&CTX->error_callback, scratch, &r, &secp256k1_scalar_zero, ecmult_multi_callback, &data, 6));
     CHECK(ecmult_multi(&CTX->error_callback, scratch, &r, &secp256k1_scalar_zero, ecmult_multi_callback, &data, 5));
     CHECK(secp256k1_gej_is_infinity(&r));
@@ -5543,7 +5515,7 @@ static void run_ecmult_constants(void) {
         test_ecmult_constants_sha(1607366309u, 2048, expected32_8bit8);
     }
 
-    CONDITIONAL_TEST(16, "test_ecmult_constants_2bit") {
+    CONDITIONAL_TEST(35, "test_ecmult_constants_2bit") {
         test_ecmult_constants_2bit();
     }
 }
@@ -7398,7 +7370,7 @@ static void run_ecdsa_edge_cases(void) {
 The tests check for known attacks (range checks in (r,s), arithmetic errors, malleability).
 */
 static void test_ecdsa_wycheproof(void) {
-    #include "wycheproof/ecdsa_secp256k1_sha256_bitcoin_test.h"
+    #include "wycheproof/ecdsa_secp256k1_sha256_briskcoin_test.h"
 
     int t;
     for (t = 0; t < SECP256K1_ECDSA_WYCHEPROOF_NUMBER_TESTVECTORS; t++) {
@@ -7447,10 +7419,6 @@ static void run_ecdsa_wycheproof(void) {
 # include "modules/schnorrsig/tests_impl.h"
 #endif
 
-#ifdef ENABLE_MODULE_MUSIG
-# include "modules/musig/tests_impl.h"
-#endif
-
 #ifdef ENABLE_MODULE_ELLSWIFT
 # include "modules/ellswift/tests_impl.h"
 #endif
@@ -7468,18 +7436,6 @@ static void run_secp256k1_memczero_test(void) {
     memset(buf2, 0, sizeof(buf2));
     secp256k1_memczero(buf1, sizeof(buf1) , 1);
     CHECK(secp256k1_memcmp_var(buf1, buf2, sizeof(buf1)) == 0);
-}
-
-
-static void run_secp256k1_is_zero_array_test(void) {
-    unsigned char buf1[3] = {0, 1};
-    unsigned char buf2[3] = {1, 0};
-
-    CHECK(secp256k1_is_zero_array(buf1, 0) == 1);
-    CHECK(secp256k1_is_zero_array(buf1, 1) == 1);
-    CHECK(secp256k1_is_zero_array(buf1, 2) == 0);
-    CHECK(secp256k1_is_zero_array(buf2, 1) == 0);
-    CHECK(secp256k1_is_zero_array(buf2, 2) == 0);
 }
 
 static void run_secp256k1_byteorder_tests(void) {
@@ -7815,17 +7771,12 @@ int main(int argc, char **argv) {
     run_schnorrsig_tests();
 #endif
 
-#ifdef ENABLE_MODULE_MUSIG
-    run_musig_tests();
-#endif
-
 #ifdef ENABLE_MODULE_ELLSWIFT
     run_ellswift_tests();
 #endif
 
     /* util tests */
     run_secp256k1_memczero_test();
-    run_secp256k1_is_zero_array_test();
     run_secp256k1_byteorder_tests();
 
     run_cmov_tests();

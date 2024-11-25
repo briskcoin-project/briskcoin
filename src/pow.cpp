@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,7 +9,6 @@
 #include <chain.h>
 #include <primitives/block.h>
 #include <uint256.h>
-#include <util/check.h>
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
@@ -135,15 +134,7 @@ bool PermittedDifficultyTransition(const Consensus::Params& params, int64_t heig
     return true;
 }
 
-// Bypasses the actual proof of work check during fuzz testing with a simplified validation checking whether
-// the most signficant bit of the last byte of the hash is set.
 bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params)
-{
-    if constexpr (G_FUZZING) return (hash.data()[31] & 0x80) == 0;
-    return CheckProofOfWorkImpl(hash, nBits, params);
-}
-
-bool CheckProofOfWorkImpl(uint256 hash, unsigned int nBits, const Consensus::Params& params)
 {
     bool fNegative;
     bool fOverflow;

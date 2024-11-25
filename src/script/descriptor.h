@@ -1,9 +1,9 @@
-// Copyright (c) 2018-2021 The Bitcoin Core developers
+// Copyright (c) 2018-2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_SCRIPT_DESCRIPTOR_H
-#define BITCOIN_SCRIPT_DESCRIPTOR_H
+#ifndef BRISKCOIN_SCRIPT_DESCRIPTOR_H
+#define BRISKCOIN_SCRIPT_DESCRIPTOR_H
 
 #include <outputtype.h>
 #include <script/script.h>
@@ -173,9 +173,9 @@ struct Descriptor {
  * is set, the checksum is mandatory - otherwise it is optional.
  *
  * If a parse error occurs, or the checksum is missing/invalid, or anything
- * else is wrong, an empty vector is returned.
+ * else is wrong, `nullptr` is returned.
  */
-std::vector<std::unique_ptr<Descriptor>> Parse(const std::string& descriptor, FlatSigningProvider& out, std::string& error, bool require_checksum = false);
+std::unique_ptr<Descriptor> Parse(const std::string& descriptor, FlatSigningProvider& out, std::string& error, bool require_checksum = false);
 
 /** Get the checksum for a `descriptor`.
  *
@@ -206,4 +206,4 @@ std::unique_ptr<Descriptor> InferDescriptor(const CScript& script, const Signing
 */
 uint256 DescriptorID(const Descriptor& desc);
 
-#endif // BITCOIN_SCRIPT_DESCRIPTOR_H
+#endif // BRISKCOIN_SCRIPT_DESCRIPTOR_H

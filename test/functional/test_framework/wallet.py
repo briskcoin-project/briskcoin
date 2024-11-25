@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020-2022 The Bitcoin Core developers
+# Copyright (c) 2020-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """A limited-functionality wallet, which may replace a real wallet in tests"""
@@ -7,6 +7,7 @@
 from copy import deepcopy
 from decimal import Decimal
 from enum import Enum
+import math
 from typing import (
     Any,
     Optional,
@@ -34,6 +35,7 @@ from test_framework.messages import (
     CTxOut,
     hash256,
     ser_compact_size,
+    WITNESS_SCALE_FACTOR,
 )
 from test_framework.script import (
     CScript,
@@ -109,7 +111,7 @@ class MiniWallet:
 
         # When the pre-mined test framework chain is used, it contains coinbase
         # outputs to the MiniWallet's default address in blocks 76-100
-        # (see method BitcoinTestFramework._initialize_chain())
+        # (see method BriskcoinTestFramework._initialize_chain())
         # The MiniWallet needs to rescan_utxos() in order to account
         # for those mature UTXOs, so that all txs spend confirmed coins
         self.rescan_utxos()
@@ -117,18 +119,20 @@ class MiniWallet:
     def _create_utxo(self, *, txid, vout, value, height, coinbase, confirmations):
         return {"txid": txid, "vout": vout, "value": value, "height": height, "coinbase": coinbase, "confirmations": confirmations}
 
-    def _bulk_tx(self, tx, target_vsize):
-        """Pad a transaction with extra outputs until it reaches a target vsize.
+    def _bulk_tx(self, tx, target_weight):
+        """Pad a transaction with extra outputs until it reaches a target weight (or higher).
         returns the tx
         """
         tx.vout.append(CTxOut(nValue=0, scriptPubKey=CScript([OP_RETURN])))
-        # determine number of needed padding bytes
-        dummy_vbytes = target_vsize - tx.get_vsize()
+        # determine number of needed padding bytes by converting weight difference to vbytes
+        dummy_vbytes = (target_weight - tx.get_weight() + 3) // 4
         # compensate for the increase of the compact-size encoded script length
         # (note that the length encoding of the unpadded output script needs one byte)
         dummy_vbytes -= len(ser_compact_size(dummy_vbytes)) - 1
         tx.vout[-1].scriptPubKey = CScript([OP_RETURN] + [OP_1] * dummy_vbytes)
-        assert_equal(tx.get_vsize(), target_vsize)
+        # Actual weight should be at most 3 higher than target weight
+        assert_greater_than_or_equal(tx.get_weight(), target_weight)
+        assert_greater_than_or_equal(target_weight + 3, tx.get_weight())
 
     def get_balance(self):
         return sum(u['value'] for u in self._utxos)
@@ -305,7 +309,7 @@ class MiniWallet:
         locktime=0,
         sequence=0,
         fee_per_output=1000,
-        target_vsize=0,
+        target_weight=0,
         confirmed_only=False,
     ):
         """
@@ -334,8 +338,8 @@ class MiniWallet:
 
         self.sign_tx(tx)
 
-        if target_vsize:
-            self._bulk_tx(tx, target_vsize)
+        if target_weight:
+            self._bulk_tx(tx, target_weight)
 
         txid = tx.rehash()
         return {
@@ -360,7 +364,7 @@ class MiniWallet:
             fee_rate=Decimal("0.003"),
             fee=Decimal("0"),
             utxo_to_spend=None,
-            target_vsize=0,
+            target_weight=0,
             confirmed_only=False,
             **kwargs,
     ):
@@ -375,18 +379,20 @@ class MiniWallet:
             vsize = Decimal(168)  # P2PK (73 bytes scriptSig + 35 bytes scriptPubKey + 60 bytes other)
         else:
             assert False
-        if target_vsize and not fee:  # respect fee_rate if target vsize is passed
-            fee = get_fee(target_vsize, fee_rate)
+        if target_weight and not fee:  # respect fee_rate if target weight is passed
+            # the actual weight might be off by 3 WUs, so calculate based on that (see self._bulk_tx)
+            max_actual_weight = target_weight + 3
+            fee = get_fee(math.ceil(max_actual_weight / WITNESS_SCALE_FACTOR), fee_rate)
         send_value = utxo_to_spend["value"] - (fee or (fee_rate * vsize / 1000))
 
         # create tx
         tx = self.create_self_transfer_multi(
             utxos_to_spend=[utxo_to_spend],
             amount_per_output=int(COIN * send_value),
-            target_vsize=target_vsize,
+            target_weight=target_weight,
             **kwargs,
         )
-        if not target_vsize:
+        if not target_weight:
             assert_equal(tx["tx"].get_vsize(), vsize)
         tx["new_utxo"] = tx.pop("new_utxos")[0]
 

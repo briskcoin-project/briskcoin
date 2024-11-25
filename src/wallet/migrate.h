@@ -1,9 +1,9 @@
-// Copyright (c) 2021 The Bitcoin Core developers
+// Copyright (c) 2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_WALLET_MIGRATE_H
-#define BITCOIN_WALLET_MIGRATE_H
+#ifndef BRISKCOIN_WALLET_MIGRATE_H
+#define BRISKCOIN_WALLET_MIGRATE_H
 
 #include <wallet/db.h>
 
@@ -115,11 +115,10 @@ public:
     bool TxnBegin() override { return false; }
     bool TxnCommit() override { return false; }
     bool TxnAbort() override { return false; }
-    bool HasActiveTxn() override { return false; }
 };
 
 //! Return object giving access to Berkeley Read Only database at specified path.
 std::unique_ptr<BerkeleyRODatabase> MakeBerkeleyRODatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
 } // namespace wallet
 
-#endif // BITCOIN_WALLET_MIGRATE_H
+#endif // BRISKCOIN_WALLET_MIGRATE_H

@@ -1,11 +1,11 @@
-// Copyright (c) 2011-2022 The Bitcoin Core developers
+// Copyright (c) 2011-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_QT_RPCCONSOLE_H
-#define BITCOIN_QT_RPCCONSOLE_H
+#ifndef BRISKCOIN_QT_RPCCONSOLE_H
+#define BRISKCOIN_QT_RPCCONSOLE_H
 
-#include <bitcoin-build-config.h> // IWYU pragma: keep
+#include <config/briskcoin-config.h> // IWYU pragma: keep
 
 #include <qt/clientmodel.h>
 #include <qt/guiutil.h>
@@ -37,7 +37,7 @@ class QMenu;
 class QItemSelection;
 QT_END_NAMESPACE
 
-/** Local Bitcoin RPC console. */
+/** Local Briskcoin RPC console. */
 class RPCConsole: public QWidget
 {
     Q_OBJECT
@@ -193,4 +193,4 @@ private Q_SLOTS:
     void updateAlerts(const QString& warnings);
 };
 
-#endif // BITCOIN_QT_RPCCONSOLE_H
+#endif // BRISKCOIN_QT_RPCCONSOLE_H

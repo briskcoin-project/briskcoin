@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 The Bitcoin Core developers
+// Copyright (c) 2017-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -15,7 +15,6 @@
 
 #include <boost/test/unit_test.hpp>
 
-using namespace util::hex_literals;
 
 namespace wallet {
 BOOST_FIXTURE_TEST_SUITE(ismine_tests, BasicTestingSetup)
@@ -26,14 +25,13 @@ wallet::ScriptPubKeyMan* CreateDescriptor(CWallet& keystore, const std::string& 
 
     FlatSigningProvider keys;
     std::string error;
-    auto parsed_descs = Parse(desc_str, keys, error, false);
-    BOOST_CHECK(success == (!parsed_descs.empty()));
+    std::unique_ptr<Descriptor> parsed_desc = Parse(desc_str, keys, error, false);
+    BOOST_CHECK(success == (parsed_desc != nullptr));
     if (!success) return nullptr;
-    auto& desc = parsed_descs.at(0);
 
     const int64_t range_start = 0, range_end = 1, next_index = 0, timestamp = 1;
 
-    WalletDescriptor w_desc(std::move(desc), timestamp, range_start, range_end, next_index);
+    WalletDescriptor w_desc(std::move(parsed_desc), timestamp, range_start, range_end, next_index);
 
     LOCK(keystore.cs_wallet);
 
@@ -684,7 +682,7 @@ BOOST_AUTO_TEST_CASE(ismine_standard)
         BOOST_CHECK(keystore.GetLegacyScriptPubKeyMan()->AddKey(keys[0]));
 
         scriptPubKey.clear();
-        scriptPubKey << OP_0 << "aabb"_hex;
+        scriptPubKey << OP_0 << ToByteVector(ParseHex("aabb"));
 
         result = keystore.GetLegacyScriptPubKeyMan()->IsMine(scriptPubKey);
         BOOST_CHECK_EQUAL(result, ISMINE_NO);
@@ -699,7 +697,7 @@ BOOST_AUTO_TEST_CASE(ismine_standard)
         BOOST_CHECK(keystore.GetLegacyScriptPubKeyMan()->AddKey(keys[0]));
 
         scriptPubKey.clear();
-        scriptPubKey << OP_16 << "aabb"_hex;
+        scriptPubKey << OP_16 << ToByteVector(ParseHex("aabb"));
 
         result = keystore.GetLegacyScriptPubKeyMan()->IsMine(scriptPubKey);
         BOOST_CHECK_EQUAL(result, ISMINE_NO);

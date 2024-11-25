@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # Copyright 2014 BitPay Inc.
-# Copyright 2016-2017 The Bitcoin Core developers
+# Copyright 2016-2017 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
-"""Test framework for bitcoin utils.
+"""Test framework for briskcoin utils.
 
-Runs automatically during `ctest --test-dir build/`.
+Runs automatically during `make check`.
 
 Can also be run manually."""
 
@@ -39,7 +39,7 @@ def main():
     # Add the format/level to the logger
     logging.basicConfig(format=formatter, level=level)
 
-    bctester(os.path.join(env_conf["SRCDIR"], "test", "util", "data"), "bitcoin-util-test.json", env_conf)
+    bctester(os.path.join(env_conf["SRCDIR"], "test", "util", "data"), "briskcoin-util-test.json", env_conf)
 
 def bctester(testDir, input_basename, buildenv):
     """ Loads and parses the input file, runs all tests and reports results"""
@@ -74,20 +74,22 @@ def bctest(testDir, testObj, buildenv):
     """
     # Get the exec names and arguments
     execprog = os.path.join(buildenv["BUILDDIR"], "src", testObj["exec"] + buildenv["EXEEXT"])
-    if testObj["exec"] == "./bitcoin-util":
-        execprog = os.getenv("BITCOINUTIL", default=execprog)
-    elif testObj["exec"] == "./bitcoin-tx":
-        execprog = os.getenv("BITCOINTX", default=execprog)
+    if testObj["exec"] == "./briskcoin-util":
+        execprog = os.getenv("BRISKCOINUTIL", default=execprog)
+    elif testObj["exec"] == "./briskcoin-tx":
+        execprog = os.getenv("BRISKCOINTX", default=execprog)
 
     execargs = testObj['args']
     execrun = [execprog] + execargs
 
     # Read the input data (if there is any)
+    stdinCfg = None
     inputData = None
     if "input" in testObj:
         filename = os.path.join(testDir, testObj["input"])
         with open(filename, encoding="utf8") as f:
             inputData = f.read()
+        stdinCfg = subprocess.PIPE
 
     # Read the expected output data (if there is any)
     outputFn = None
@@ -110,8 +112,9 @@ def bctest(testDir, testObj, buildenv):
             raise Exception
 
     # Run the test
+    proc = subprocess.Popen(execrun, stdin=stdinCfg, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
-        res = subprocess.run(execrun, capture_output=True, text=True, input=inputData)
+        outs = proc.communicate(input=inputData)
     except OSError:
         logging.error("OSError, Failed to execute " + execprog)
         raise
@@ -120,9 +123,9 @@ def bctest(testDir, testObj, buildenv):
         data_mismatch, formatting_mismatch = False, False
         # Parse command output and expected output
         try:
-            a_parsed = parse_output(res.stdout, outputType)
+            a_parsed = parse_output(outs[0], outputType)
         except Exception as e:
-            logging.error(f"Error parsing command output as {outputType}: '{str(e)}'; res: {str(res)}")
+            logging.error('Error parsing command output as %s: %s' % (outputType, e))
             raise
         try:
             b_parsed = parse_output(outputData, outputType)
@@ -131,13 +134,13 @@ def bctest(testDir, testObj, buildenv):
             raise
         # Compare data
         if a_parsed != b_parsed:
-            logging.error(f"Output data mismatch for {outputFn} (format {outputType}); res: {str(res)}")
+            logging.error("Output data mismatch for " + outputFn + " (format " + outputType + ")")
             data_mismatch = True
         # Compare formatting
-        if res.stdout != outputData:
-            error_message = f"Output formatting mismatch for {outputFn}:\nres: {str(res)}\n"
+        if outs[0] != outputData:
+            error_message = "Output formatting mismatch for " + outputFn + ":\n"
             error_message += "".join(difflib.context_diff(outputData.splitlines(True),
-                                                          res.stdout.splitlines(True),
+                                                          outs[0].splitlines(True),
                                                           fromfile=outputFn,
                                                           tofile="returned"))
             logging.error(error_message)
@@ -149,20 +152,20 @@ def bctest(testDir, testObj, buildenv):
     wantRC = 0
     if "return_code" in testObj:
         wantRC = testObj['return_code']
-    if res.returncode != wantRC:
-        logging.error(f"Return code mismatch for {outputFn}; res: {str(res)}")
+    if proc.returncode != wantRC:
+        logging.error("Return code mismatch for " + outputFn)
         raise Exception
 
     if "error_txt" in testObj:
         want_error = testObj["error_txt"]
         # Compare error text
         # TODO: ideally, we'd compare the strings exactly and also assert
-        # That stderr is empty if no errors are expected. However, bitcoin-tx
+        # That stderr is empty if no errors are expected. However, briskcoin-tx
         # emits DISPLAY errors when running as a windows application on
         # linux through wine. Just assert that the expected error text appears
         # somewhere in stderr.
-        if want_error not in res.stderr:
-            logging.error(f"Error mismatch:\nExpected: {want_error}\nReceived: {res.stderr.rstrip()}\nres: {str(res)}")
+        if want_error not in outs[1]:
+            logging.error("Error mismatch:\n" + "Expected: " + want_error + "\nReceived: " + outs[1].rstrip())
             raise Exception
 
 def parse_output(a, fmt):

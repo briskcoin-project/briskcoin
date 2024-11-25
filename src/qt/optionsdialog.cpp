@@ -1,13 +1,13 @@
-// Copyright (c) 2011-2022 The Bitcoin Core developers
+// Copyright (c) 2011-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitcoin-build-config.h> // IWYU pragma: keep
+#include <config/briskcoin-config.h> // IWYU pragma: keep
 
 #include <qt/optionsdialog.h>
 #include <qt/forms/ui_optionsdialog.h>
 
-#include <qt/bitcoinunits.h>
+#include <qt/briskcoinunits.h>
 #include <qt/clientmodel.h>
 #include <qt/guiconstants.h>
 #include <qt/guiutil.h>
@@ -95,7 +95,8 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
     ui->verticalLayout->setStretchFactor(ui->tabWidget, 1);
 
     /* Main elements init */
-    ui->databaseCache->setRange(nMinDbCache, std::numeric_limits<int>::max());
+    ui->databaseCache->setMinimum(nMinDbCache);
+    ui->databaseCache->setMaximum(nMaxDbCache);
     ui->threadsScriptVerif->setMinimum(-GetNumCores());
     ui->threadsScriptVerif->setMaximum(MAX_SCRIPTCHECK_THREADS);
     ui->pruneWarning->setVisible(false);
@@ -105,6 +106,13 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
     connect(ui->prune, &QPushButton::toggled, ui->pruneSize, &QWidget::setEnabled);
 
     /* Network elements init */
+#ifndef USE_UPNP
+    ui->mapPortUpnp->setEnabled(false);
+#endif
+#ifndef USE_NATPMP
+    ui->mapPortNatpmp->setEnabled(false);
+#endif
+
     ui->proxyIp->setEnabled(false);
     ui->proxyPort->setEnabled(false);
     ui->proxyPort->setValidator(new QIntValidator(1, 65535, this));
@@ -126,8 +134,8 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
     /* remove Window tab on Mac */
     ui->tabWidget->removeTab(ui->tabWidget->indexOf(ui->tabWindow));
     /* hide launch at startup option on macOS */
-    ui->bitcoinAtStartup->setVisible(false);
-    ui->verticalLayout_Main->removeWidget(ui->bitcoinAtStartup);
+    ui->briskcoinAtStartup->setVisible(false);
+    ui->verticalLayout_Main->removeWidget(ui->briskcoinAtStartup);
     ui->verticalLayout_Main->removeItem(ui->horizontalSpacer_0_Main);
 #endif
 
@@ -139,7 +147,7 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
     }
 
 #ifdef ENABLE_EXTERNAL_SIGNER
-    ui->externalSignerPath->setToolTip(ui->externalSignerPath->toolTip().arg(CLIENT_NAME));
+    ui->externalSignerPath->setToolTip(ui->externalSignerPath->toolTip().arg(PACKAGE_NAME));
 #else
     //: "External signing" means using devices such as hardware wallets.
     ui->externalSignerPath->setToolTip(tr("Compiled without external signing support (required for external signing)"));
@@ -148,12 +156,12 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
     /* Display elements init */
     QDir translations(":translations");
 
-    ui->bitcoinAtStartup->setToolTip(ui->bitcoinAtStartup->toolTip().arg(CLIENT_NAME));
-    ui->bitcoinAtStartup->setText(ui->bitcoinAtStartup->text().arg(CLIENT_NAME));
+    ui->briskcoinAtStartup->setToolTip(ui->briskcoinAtStartup->toolTip().arg(PACKAGE_NAME));
+    ui->briskcoinAtStartup->setText(ui->briskcoinAtStartup->text().arg(PACKAGE_NAME));
 
-    ui->openBitcoinConfButton->setToolTip(ui->openBitcoinConfButton->toolTip().arg(CLIENT_NAME));
+    ui->openBriskcoinConfButton->setToolTip(ui->openBriskcoinConfButton->toolTip().arg(PACKAGE_NAME));
 
-    ui->lang->setToolTip(ui->lang->toolTip().arg(CLIENT_NAME));
+    ui->lang->setToolTip(ui->lang->toolTip().arg(PACKAGE_NAME));
     ui->lang->addItem(QString("(") + tr("default") + QString(")"), QVariant(""));
     for (const QString &langStr : translations.entryList())
     {
@@ -162,15 +170,8 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
         /** check if the locale name consists of 2 parts (language_country) */
         if(langStr.contains("_"))
         {
-            /** display language strings as "native language - native country/territory (locale name)", e.g. "Deutsch - Deutschland (de)" */
-            ui->lang->addItem(locale.nativeLanguageName() + QString(" - ") +
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
-                              locale.nativeTerritoryName() +
-#else
-                              locale.nativeCountryName() +
-#endif
-                              QString(" (") + langStr + QString(")"), QVariant(langStr));
-
+            /** display language strings as "native language - native country (locale name)", e.g. "Deutsch - Deutschland (de)" */
+            ui->lang->addItem(locale.nativeLanguageName() + QString(" - ") + locale.nativeCountryName() + QString(" (") + langStr + QString(")"), QVariant(langStr));
         }
         else
         {
@@ -178,7 +179,7 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
             ui->lang->addItem(locale.nativeLanguageName() + QString(" (") + langStr + QString(")"), QVariant(langStr));
         }
     }
-    ui->unit->setModel(new BitcoinUnits(this));
+    ui->unit->setModel(new BriskcoinUnits(this));
 
     /* Widget-to-option mapper */
     mapper = new QDataWidgetMapper(this);
@@ -282,7 +283,7 @@ void OptionsDialog::setCurrentTab(OptionsDialog::Tab tab)
 void OptionsDialog::setMapper()
 {
     /* Main */
-    mapper->addMapping(ui->bitcoinAtStartup, OptionsModel::StartAtStartup);
+    mapper->addMapping(ui->briskcoinAtStartup, OptionsModel::StartAtStartup);
     mapper->addMapping(ui->threadsScriptVerif, OptionsModel::ThreadsScriptVerif);
     mapper->addMapping(ui->databaseCache, OptionsModel::DatabaseCache);
     mapper->addMapping(ui->prune, OptionsModel::Prune);
@@ -293,9 +294,10 @@ void OptionsDialog::setMapper()
     mapper->addMapping(ui->coinControlFeatures, OptionsModel::CoinControlFeatures);
     mapper->addMapping(ui->subFeeFromAmount, OptionsModel::SubFeeFromAmount);
     mapper->addMapping(ui->externalSignerPath, OptionsModel::ExternalSignerPath);
-    mapper->addMapping(ui->m_enable_psbt_controls, OptionsModel::EnablePSBTControls);
+    mapper->addMapping(ui->m_enable_psbt_controls, OptionsModel::EnablePSBKControls);
 
     /* Network */
+    mapper->addMapping(ui->mapPortUpnp, OptionsModel::MapPortUPnP);
     mapper->addMapping(ui->mapPortNatpmp, OptionsModel::MapPortNatpmp);
     mapper->addMapping(ui->allowIncoming, OptionsModel::Listen);
     mapper->addMapping(ui->enableServer, OptionsModel::Server);
@@ -356,7 +358,7 @@ void OptionsDialog::on_resetButton_clicked()
     }
 }
 
-void OptionsDialog::on_openBitcoinConfButton_clicked()
+void OptionsDialog::on_openBriskcoinConfButton_clicked()
 {
     QMessageBox config_msgbox(this);
     config_msgbox.setIcon(QMessageBox::Information);
@@ -376,7 +378,7 @@ void OptionsDialog::on_openBitcoinConfButton_clicked()
     if (config_msgbox.clickedButton() != open_button) return;
 
     /* show an error if there was some problem opening the file */
-    if (!GUIUtil::openBitcoinConf())
+    if (!GUIUtil::openBriskcoinConf())
         QMessageBox::critical(this, tr("Error"), tr("The configuration file could not be opened."));
 }
 

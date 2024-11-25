@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2022 The Bitcoin Core developers
+// Copyright (c) 2015-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,8 +9,8 @@
 #include <interfaces/chain.h>
 #include <interfaces/node.h>
 #include <key_io.h>
-#include <qt/bitcoinamountfield.h>
-#include <qt/bitcoinunits.h>
+#include <qt/briskcoinamountfield.h>
+#include <qt/briskcoinunits.h>
 #include <qt/clientmodel.h>
 #include <qt/optionsmodel.h>
 #include <qt/overviewpage.h>
@@ -81,7 +81,7 @@ uint256 SendCoins(CWallet& wallet, SendCoinsDialog& sendCoinsDialog, const CTxDe
     QVBoxLayout* entries = sendCoinsDialog.findChild<QVBoxLayout*>("entries");
     SendCoinsEntry* entry = qobject_cast<SendCoinsEntry*>(entries->itemAt(0)->widget());
     entry->findChild<QValidatedLineEdit*>("payTo")->setText(QString::fromStdString(EncodeDestination(address)));
-    entry->findChild<BitcoinAmountField*>("payAmount")->setValue(amount);
+    entry->findChild<BriskcoinAmountField*>("payAmount")->setValue(amount);
     sendCoinsDialog.findChild<QFrame*>("frameFee")
         ->findChild<QFrame*>("frameFeeSelection")
         ->findChild<QCheckBox*>("optInRBF")
@@ -138,8 +138,8 @@ void BumpFee(TransactionView& view, const uint256& txid, bool expectDisabled, st
 
 void CompareBalance(WalletModel& walletModel, CAmount expected_balance, QLabel* balance_label_to_check)
 {
-    BitcoinUnit unit = walletModel.getOptionsModel()->getDisplayUnit();
-    QString balanceComparison = BitcoinUnits::formatWithUnit(unit, expected_balance, false, BitcoinUnits::SeparatorStyle::ALWAYS);
+    BriskcoinUnit unit = walletModel.getOptionsModel()->getDisplayUnit();
+    QString balanceComparison = BriskcoinUnits::formatWithUnit(unit, expected_balance, false, BriskcoinUnits::SeparatorStyle::ALWAYS);
     QCOMPARE(balance_label_to_check->text().trimmed(), balanceComparison);
 }
 
@@ -199,7 +199,7 @@ std::shared_ptr<CWallet> SetupLegacyWatchOnlyWallet(interfaces::Node& node, Test
         wallet->SetupLegacyScriptPubKeyMan();
         // Add watched key
         CPubKey pubKey = test.coinbaseKey.GetPubKey();
-        bool import_keys = wallet->ImportPubKeys({{pubKey.GetID(), false}}, {{pubKey.GetID(), pubKey}} , /*key_origins=*/{}, /*add_keypool=*/false, /*timestamp=*/1);
+        bool import_keys = wallet->ImportPubKeys({pubKey.GetID()}, {{pubKey.GetID(), pubKey}} , /*key_origins=*/{}, /*add_keypool=*/false, /*internal=*/false, /*timestamp=*/1);
         assert(import_keys);
         wallet->SetLastBlockProcessed(105, WITH_LOCK(node.context()->chainman->GetMutex(), return node.context()->chainman->ActiveChain().Tip()->GetBlockHash()));
     }
@@ -218,10 +218,8 @@ std::shared_ptr<CWallet> SetupDescriptorsWallet(interfaces::Node& node, TestChai
     // Add the coinbase key
     FlatSigningProvider provider;
     std::string error;
-    auto descs = Parse("combo(" + EncodeSecret(test.coinbaseKey) + ")", provider, error, /* require_checksum=*/ false);
-    assert(!descs.empty());
-    assert(descs.size() == 1);
-    auto& desc = descs.at(0);
+    std::unique_ptr<Descriptor> desc = Parse("combo(" + EncodeSecret(test.coinbaseKey) + ")", provider, error, /* require_checksum=*/ false);
+    assert(desc);
     WalletDescriptor w_desc(std::move(desc), 0, 0, 1, 1);
     if (!wallet->AddWalletDescriptor(w_desc, provider, "", false)) assert(false);
     CTxDestination dest = GetDestinationForKey(test.coinbaseKey.GetPubKey(), wallet->m_default_address_type);
@@ -268,9 +266,9 @@ public:
 //
 // This also requires overriding the default minimal Qt platform:
 //
-//     QT_QPA_PLATFORM=xcb     src/qt/test/test_bitcoin-qt  # Linux
-//     QT_QPA_PLATFORM=windows src/qt/test/test_bitcoin-qt  # Windows
-//     QT_QPA_PLATFORM=cocoa   src/qt/test/test_bitcoin-qt  # macOS
+//     QT_QPA_PLATFORM=xcb     src/qt/test/test_briskcoin-qt  # Linux
+//     QT_QPA_PLATFORM=windows src/qt/test/test_briskcoin-qt  # Windows
+//     QT_QPA_PLATFORM=cocoa   src/qt/test/test_briskcoin-qt  # macOS
 void TestGUI(interfaces::Node& node, const std::shared_ptr<CWallet>& wallet)
 {
     // Create widgets for sending coins and listing transactions.
@@ -322,7 +320,7 @@ void TestGUI(interfaces::Node& node, const std::shared_ptr<CWallet>& wallet)
     labelInput->setText("TEST_LABEL_1");
 
     // Amount input
-    BitcoinAmountField* amountInput = receiveCoinsDialog.findChild<BitcoinAmountField*>("reqAmount");
+    BriskcoinAmountField* amountInput = receiveCoinsDialog.findChild<BriskcoinAmountField*>("reqAmount");
     amountInput->setValue(1);
 
     // Message input
@@ -338,7 +336,7 @@ void TestGUI(interfaces::Node& node, const std::shared_ptr<CWallet>& wallet)
             QCOMPARE(receiveRequestDialog->QObject::findChild<QLabel*>("payment_header")->text(), QString("Payment information"));
             QCOMPARE(receiveRequestDialog->QObject::findChild<QLabel*>("uri_tag")->text(), QString("URI:"));
             QString uri = receiveRequestDialog->QObject::findChild<QLabel*>("uri_content")->text();
-            QCOMPARE(uri.count("bitcoin:"), 2);
+            QCOMPARE(uri.count("briskcoin:"), 2);
             QCOMPARE(receiveRequestDialog->QObject::findChild<QLabel*>("address_tag")->text(), QString("Address:"));
             QVERIFY(address.isEmpty());
             address = receiveRequestDialog->QObject::findChild<QLabel*>("address_content")->text();
@@ -475,8 +473,8 @@ void WalletTests::walletTests()
         // framework when it tries to look up unimplemented cocoa functions,
         // and fails to handle returned nulls
         // (https://bugreports.qt.io/browse/QTBUG-49686).
-        qWarning() << "Skipping WalletTests on mac build with 'minimal' platform set due to Qt bugs. To run AppTests, invoke "
-                      "with 'QT_QPA_PLATFORM=cocoa test_bitcoin-qt' on mac, or else use a linux or windows build.";
+        QWARN("Skipping WalletTests on mac build with 'minimal' platform set due to Qt bugs. To run AppTests, invoke "
+              "with 'QT_QPA_PLATFORM=cocoa test_briskcoin-qt' on mac, or else use a linux or windows build.");
         return;
     }
 #endif

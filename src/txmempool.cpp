@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -33,9 +33,6 @@
 #include <ranges>
 #include <string_view>
 #include <utility>
-
-TRACEPOINT_SEMAPHORE(mempool, added);
-TRACEPOINT_SEMAPHORE(mempool, removed);
 
 bool TestLockPointValidity(CChain& active_chain, const LockPoints& lp)
 {
@@ -480,7 +477,7 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
     txns_randomized.emplace_back(newit->GetSharedTx());
     newit->idx_randomized = txns_randomized.size() - 1;
 
-    TRACEPOINT(mempool, added,
+    TRACE3(mempool, added,
         entry.GetTx().GetHash().data(),
         entry.GetTxSize(),
         entry.GetFee()
@@ -500,7 +497,7 @@ void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
         // notification.
         m_opts.signals->TransactionRemovedFromMempool(it->GetSharedTx(), reason, mempool_sequence);
     }
-    TRACEPOINT(mempool, removed,
+    TRACE5(mempool, removed,
         it->GetTx().GetHash().data(),
         RemovalReasonToString(reason).c_str(),
         it->GetTxSize(),
@@ -664,7 +661,7 @@ void CTxMemPool::check(const CCoinsViewCache& active_coins_tip, int64_t spendhei
 
     AssertLockHeld(::cs_main);
     LOCK(cs);
-    LogDebug(BCLog::MEMPOOL, "Checking mempool with %u transactions and %u inputs\n", (unsigned int)mapTx.size(), (unsigned int)mapNextTx.size());
+    LogPrint(BCLog::MEMPOOL, "Checking mempool with %u transactions and %u inputs\n", (unsigned int)mapTx.size(), (unsigned int)mapNextTx.size());
 
     uint64_t checkTotal = 0;
     CAmount check_total_fee{0};
@@ -991,12 +988,12 @@ bool CTxMemPool::HasNoInputsOf(const CTransaction &tx) const
 
 CCoinsViewMemPool::CCoinsViewMemPool(CCoinsView* baseIn, const CTxMemPool& mempoolIn) : CCoinsViewBacked(baseIn), mempool(mempoolIn) { }
 
-std::optional<Coin> CCoinsViewMemPool::GetCoin(const COutPoint& outpoint) const
-{
+bool CCoinsViewMemPool::GetCoin(const COutPoint &outpoint, Coin &coin) const {
     // Check to see if the inputs are made available by another tx in the package.
     // These Coins would not be available in the underlying CoinsView.
     if (auto it = m_temp_added.find(outpoint); it != m_temp_added.end()) {
-        return it->second;
+        coin = it->second;
+        return true;
     }
 
     // If an entry in the mempool exists, always return that one, as it's guaranteed to never
@@ -1005,13 +1002,14 @@ std::optional<Coin> CCoinsViewMemPool::GetCoin(const COutPoint& outpoint) const
     CTransactionRef ptx = mempool.get(outpoint.hash);
     if (ptx) {
         if (outpoint.n < ptx->vout.size()) {
-            Coin coin(ptx->vout[outpoint.n], MEMPOOL_HEIGHT, false);
+            coin = Coin(ptx->vout[outpoint.n], MEMPOOL_HEIGHT, false);
             m_non_base_coins.emplace(outpoint);
-            return coin;
+            return true;
+        } else {
+            return false;
         }
-        return std::nullopt;
     }
-    return base->GetCoin(outpoint);
+    return base->GetCoin(outpoint, coin);
 }
 
 void CCoinsViewMemPool::PackageAddTransaction(const CTransactionRef& tx)
@@ -1038,7 +1036,7 @@ void CTxMemPool::RemoveUnbroadcastTx(const uint256& txid, const bool unchecked) 
 
     if (m_unbroadcast_txids.erase(txid))
     {
-        LogDebug(BCLog::MEMPOOL, "Removed %i from set of unbroadcast txns%s\n", txid.GetHex(), (unchecked ? " before confirmation that txn was sent out" : ""));
+        LogPrint(BCLog::MEMPOOL, "Removed %i from set of unbroadcast txns%s\n", txid.GetHex(), (unchecked ? " before confirmation that txn was sent out" : ""));
     }
 }
 
@@ -1166,7 +1164,7 @@ void CTxMemPool::TrimToSize(size_t sizelimit, std::vector<COutPoint>* pvNoSpends
     }
 
     if (maxFeeRateRemoved > CFeeRate(0)) {
-        LogDebug(BCLog::MEMPOOL, "Removed %u txn, rolling minimum fee bumped to %s\n", nTxnRemoved, maxFeeRateRemoved.ToString());
+        LogPrint(BCLog::MEMPOOL, "Removed %u txn, rolling minimum fee bumped to %s\n", nTxnRemoved, maxFeeRateRemoved.ToString());
     }
 }
 

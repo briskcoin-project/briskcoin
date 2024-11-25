@@ -1,12 +1,10 @@
-// Copyright (c) 2023-present The Bitcoin Core developers
+// Copyright (c) 2023-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
 #include <test/util/setup_common.h>
 #include <validation.h>
-
-#include <memory>
 
 static void CheckBlockIndex(benchmark::Bench& bench)
 {

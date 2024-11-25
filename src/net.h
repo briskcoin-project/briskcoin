@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_NET_H
-#define BITCOIN_NET_H
+#ifndef BRISKCOIN_NET_H
+#define BRISKCOIN_NET_H
 
 #include <bip324.h>
 #include <chainparams.h>
@@ -148,7 +148,7 @@ enum
     LOCAL_NONE,   // unknown
     LOCAL_IF,     // address a local interface listens on
     LOCAL_BIND,   // address explicit bound to
-    LOCAL_MAPPED, // address reported by PCP
+    LOCAL_MAPPED, // address reported by UPnP or NAT-PMP
     LOCAL_MANUAL, // address explicitly specified (-externalip=)
 
     LOCAL_MAX
@@ -245,9 +245,6 @@ public:
     CNetMessage(const CNetMessage&) = delete;
     CNetMessage& operator=(CNetMessage&&) = default;
     CNetMessage& operator=(const CNetMessage&) = delete;
-
-    /** Compute total memory usage of this object (own memory + any dynamic memory). */
-    size_t GetMemoryUsage() const noexcept;
 };
 
 /** The Transport converts one connection's sent messages to wire bytes, and received bytes back. */
@@ -684,7 +681,7 @@ public:
      * `shared_ptr` (instead of `unique_ptr`) is used to avoid premature close of
      * the underlying file descriptor by one thread while another thread is
      * poll(2)-ing it for activity.
-     * @see https://github.com/bitcoin/bitcoin/issues/21744 for details.
+     * @see https://github.com/briskcoin/briskcoin/issues/21744 for details.
      */
     std::shared_ptr<Sock> m_sock GUARDED_BY(m_sock_mutex);
 
@@ -1038,7 +1035,7 @@ public:
 
     struct Options
     {
-        ServiceFlags m_local_services = NODE_NONE;
+        ServiceFlags nLocalServices = NODE_NONE;
         int m_max_automatic_connections = 0;
         CClientUIInterface* uiInterface = nullptr;
         NetEventsInterface* m_msgproc = nullptr;
@@ -1068,7 +1065,7 @@ public:
     {
         AssertLockNotHeld(m_total_bytes_sent_mutex);
 
-        m_local_services = connOptions.m_local_services;
+        nLocalServices = connOptions.nLocalServices;
         m_max_automatic_connections = connOptions.m_max_automatic_connections;
         m_max_outbound_full_relay = std::min(MAX_OUTBOUND_FULL_RELAY_CONNECTIONS, m_max_automatic_connections);
         m_max_outbound_block_relay = std::min(MAX_BLOCK_RELAY_ONLY_CONNECTIONS, m_max_automatic_connections - m_max_outbound_full_relay);
@@ -1226,8 +1223,8 @@ public:
 
     //! Updates the local services that this node advertises to other peers
     //! during connection handshake.
-    void AddLocalServices(ServiceFlags services) { m_local_services = ServiceFlags(m_local_services | services); };
-    void RemoveLocalServices(ServiceFlags services) { m_local_services = ServiceFlags(m_local_services & ~services); }
+    void AddLocalServices(ServiceFlags services) { nLocalServices = ServiceFlags(nLocalServices | services); };
+    void RemoveLocalServices(ServiceFlags services) { nLocalServices = ServiceFlags(nLocalServices & ~services); }
 
     uint64_t GetMaxOutboundTarget() const EXCLUSIVE_LOCKS_REQUIRED(!m_total_bytes_sent_mutex);
     std::chrono::seconds GetMaxOutboundTimeframe() const;
@@ -1281,7 +1278,7 @@ private:
     void ThreadOpenAddedConnections() EXCLUSIVE_LOCKS_REQUIRED(!m_added_nodes_mutex, !m_unused_i2p_sessions_mutex, !m_reconnections_mutex);
     void AddAddrFetch(const std::string& strDest) EXCLUSIVE_LOCKS_REQUIRED(!m_addr_fetches_mutex);
     void ProcessAddrFetch() EXCLUSIVE_LOCKS_REQUIRED(!m_addr_fetches_mutex, !m_unused_i2p_sessions_mutex);
-    void ThreadOpenConnections(std::vector<std::string> connect, Span<const std::string> seed_nodes) EXCLUSIVE_LOCKS_REQUIRED(!m_addr_fetches_mutex, !m_added_nodes_mutex, !m_nodes_mutex, !m_unused_i2p_sessions_mutex, !m_reconnections_mutex);
+    void ThreadOpenConnections(std::vector<std::string> connect) EXCLUSIVE_LOCKS_REQUIRED(!m_addr_fetches_mutex, !m_added_nodes_mutex, !m_nodes_mutex, !m_unused_i2p_sessions_mutex, !m_reconnections_mutex);
     void ThreadMessageHandler() EXCLUSIVE_LOCKS_REQUIRED(!mutexMsgProc);
     void ThreadI2PAcceptIncoming();
     void AcceptConnection(const ListenSocket& hListenSocket);
@@ -1473,7 +1470,7 @@ private:
      *
      * \sa Peer::our_services
      */
-    std::atomic<ServiceFlags> m_local_services;
+    std::atomic<ServiceFlags> nLocalServices;
 
     std::unique_ptr<CSemaphore> semOutbound;
     std::unique_ptr<CSemaphore> semAddnode;
@@ -1667,4 +1664,4 @@ extern std::function<void(const CAddress& addr,
                           bool is_incoming)>
     CaptureMessage;
 
-#endif // BITCOIN_NET_H
+#endif // BRISKCOIN_NET_H

@@ -1,5 +1,5 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -187,8 +187,6 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "gettxoutproof", 0, "txids" },
     { "gettxoutsetinfo", 1, "hash_or_height" },
     { "gettxoutsetinfo", 2, "use_index"},
-    { "dumptxoutset", 2, "options" },
-    { "dumptxoutset", 2, "rollback" },
     { "lockunspent", 0, "unlock" },
     { "lockunspent", 1, "transactions" },
     { "lockunspent", 2, "persistent" },
@@ -254,7 +252,6 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "keypoolrefill", 0, "newsize" },
     { "getrawmempool", 0, "verbose" },
     { "getrawmempool", 1, "mempool_sequence" },
-    { "getorphantxs", 0, "verbosity" },
     { "estimatesmartfee", 0, "conf_target" },
     { "estimaterawfee", 0, "conf_target" },
     { "estimaterawfee", 1, "threshold" },

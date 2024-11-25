@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2022 The Bitcoin Core developers
+// Copyright (c) 2011-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,7 +10,6 @@
 #include <script/sign.h>
 #include <script/signingprovider.h>
 #include <test/util/setup_common.h>
-#include <test/util/transaction_utils.h>
 #include <tinyformat.h>
 #include <uint256.h>
 

@@ -1,9 +1,9 @@
-// Copyright (c) 2020-2021 The Bitcoin Core developers
+// Copyright (c) 2020-2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_WALLET_SQLITE_H
-#define BITCOIN_WALLET_SQLITE_H
+#ifndef BRISKCOIN_WALLET_SQLITE_H
+#define BRISKCOIN_WALLET_SQLITE_H
 
 #include <sync.h>
 #include <wallet/db.h>
@@ -95,7 +95,6 @@ public:
     bool TxnBegin() override;
     bool TxnCommit() override;
     bool TxnAbort() override;
-    bool HasActiveTxn() override { return m_txn; }
 };
 
 /** An instance of this class represents one SQLite3 database.
@@ -183,4 +182,4 @@ std::unique_ptr<SQLiteDatabase> MakeSQLiteDatabase(const fs::path& path, const D
 std::string SQLiteDatabaseVersion();
 } // namespace wallet
 
-#endif // BITCOIN_WALLET_SQLITE_H
+#endif // BRISKCOIN_WALLET_SQLITE_H

@@ -1,9 +1,9 @@
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_NETBASE_H
-#define BITCOIN_NETBASE_H
+#ifndef BRISKCOIN_NETBASE_H
+#define BRISKCOIN_NETBASE_H
 
 #include <compat/compat.h>
 #include <netaddress.h>
@@ -132,13 +132,6 @@ public:
     {
         AssertLockNotHeld(m_mutex);
         return Contains(addr.GetNetwork());
-    }
-
-    [[nodiscard]] std::unordered_set<Network> All() const EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
-    {
-        AssertLockNotHeld(m_mutex);
-        LOCK(m_mutex);
-        return m_reachable;
     }
 
 private:
@@ -351,4 +344,4 @@ bool IsBadPort(uint16_t port);
  */
 CService MaybeFlipIPv6toCJDNS(const CService& service);
 
-#endif // BITCOIN_NETBASE_H
+#endif // BRISKCOIN_NETBASE_H

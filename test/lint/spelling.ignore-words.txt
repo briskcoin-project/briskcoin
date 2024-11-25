@@ -1,6 +1,7 @@
 afile
 amountIn
 asend
+ba
 blockin
 bu
 cachable
@@ -12,14 +13,14 @@ fo
 fpr
 hashIn
 hights
-incomin
+inflight
 invokable
+keypair
 lief
 mor
 nd
 nin
 outIn
-re-use
 requestor
 ser
 siz
@@ -28,4 +29,5 @@ unparseable
 unser
 useable
 viewIn
+warmup
 wit

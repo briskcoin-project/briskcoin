@@ -1,13 +1,12 @@
-// Copyright (c) 2018-2022 The Bitcoin Core developers
+// Copyright (c) 2018-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_INTERFACES_NODE_H
-#define BITCOIN_INTERFACES_NODE_H
+#ifndef BRISKCOIN_INTERFACES_NODE_H
+#define BRISKCOIN_INTERFACES_NODE_H
 
 #include <common/settings.h>
 #include <consensus/amount.h>          // For CAmount
-#include <logging.h>                   // For BCLog::CategoryMask
 #include <net.h>                       // For NodeId
 #include <net_types.h>                 // For banmap_t
 #include <netaddress.h>                // For Network
@@ -66,7 +65,7 @@ public:
     virtual std::string getName() = 0;
 };
 
-//! Top-level interface for a bitcoin node (bitcoind process).
+//! Top-level interface for a briskcoin node (briskcoind process).
 class Node
 {
 public:
@@ -85,7 +84,7 @@ public:
     virtual int getExitStatus() = 0;
 
     // Get log flags.
-    virtual BCLog::CategoryMask getLogCategories() = 0;
+    virtual uint32_t getLogCategories() = 0;
 
     //! Initialize app dependencies.
     virtual bool baseInitialize() = 0;
@@ -106,7 +105,7 @@ public:
     //! would be ignored because it is also specified in the command line.
     virtual bool isSettingIgnored(const std::string& name) = 0;
 
-    //! Return setting value from <datadir>/settings.json or bitcoin.conf.
+    //! Return setting value from <datadir>/settings.json or briskcoin.conf.
     virtual common::SettingsValue getPersistentSetting(const std::string& name) = 0;
 
     //! Update a setting in <datadir>/settings.json.
@@ -121,7 +120,7 @@ public:
     virtual void resetSettings() = 0;
 
     //! Map port.
-    virtual void mapPort(bool use_pcp) = 0;
+    virtual void mapPort(bool use_upnp, bool use_natpmp) = 0;
 
     //! Get proxy.
     virtual bool getProxy(Network net, Proxy& proxy_info) = 0;
@@ -288,4 +287,4 @@ struct BlockTip {
 
 } // namespace interfaces
 
-#endif // BITCOIN_INTERFACES_NODE_H
+#endif // BRISKCOIN_INTERFACES_NODE_H

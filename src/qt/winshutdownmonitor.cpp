@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 The Bitcoin Core developers
+// Copyright (c) 2014-2019 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -12,11 +12,7 @@
 
 // If we don't want a message to be processed by Qt, return true and set result to
 // the value that the window procedure should return. Otherwise return false.
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-bool WinShutdownMonitor::nativeEventFilter(const QByteArray &eventType, void *pMessage, qintptr *pnResult)
-#else
 bool WinShutdownMonitor::nativeEventFilter(const QByteArray &eventType, void *pMessage, long *pnResult)
-#endif
 {
        Q_UNUSED(eventType);
 

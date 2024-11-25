@@ -1,15 +1,15 @@
-// Copyright (c) 2018-2022 The Bitcoin Core developers
+// Copyright (c) 2018-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_SPAN_H
-#define BITCOIN_SPAN_H
+#ifndef BRISKCOIN_SPAN_H
+#define BRISKCOIN_SPAN_H
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <span>
 #include <type_traits>
-#include <utility>
 
 #ifdef DEBUG
 #define CONSTEXPR_IF_NOT_DEBUG
@@ -213,6 +213,13 @@ public:
          return Span<C>(m_data + m_size - count, count);
     }
 
+    friend constexpr bool operator==(const Span& a, const Span& b) noexcept { return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin()); }
+    friend constexpr bool operator!=(const Span& a, const Span& b) noexcept { return !(a == b); }
+    friend constexpr bool operator<(const Span& a, const Span& b) noexcept { return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end()); }
+    friend constexpr bool operator<=(const Span& a, const Span& b) noexcept { return !(b < a); }
+    friend constexpr bool operator>(const Span& a, const Span& b) noexcept { return (b < a); }
+    friend constexpr bool operator>=(const Span& a, const Span& b) noexcept { return !(a < b); }
+
     template <typename O> friend class Span;
 };
 
@@ -296,4 +303,4 @@ template <typename T> constexpr auto UCharSpanCast(Span<T> s) -> Span<typename s
 /** Like the Span constructor, but for (const) unsigned char member types only. Only works for (un)signed char containers. */
 template <typename V> constexpr auto MakeUCharSpan(V&& v) -> decltype(UCharSpanCast(Span{std::forward<V>(v)})) { return UCharSpanCast(Span{std::forward<V>(v)}); }
 
-#endif // BITCOIN_SPAN_H
+#endif // BRISKCOIN_SPAN_H

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 The Bitcoin Core developers
+// Copyright (c) 2017-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -103,7 +103,7 @@ bool BuildChainTestingSetup::BuildChain(const CBlockIndex* pindex,
         CBlockHeader header = block->GetBlockHeader();
 
         BlockValidationState state;
-        if (!Assert(m_node.chainman)->ProcessNewBlockHeaders({{header}}, true, state, &pindex)) {
+        if (!Assert(m_node.chainman)->ProcessNewBlockHeaders({header}, true, state, &pindex)) {
             return false;
         }
     }
@@ -144,7 +144,7 @@ BOOST_FIXTURE_TEST_CASE(blockfilter_index_initial_sync, BuildChainTestingSetup)
     BOOST_REQUIRE(filter_index.StartBackgroundSync());
 
     // Allow filter index to catch up with the block index.
-    IndexWaitSynced(filter_index, *Assert(m_node.shutdown_signal));
+    IndexWaitSynced(filter_index, *Assert(m_node.shutdown));
 
     // Check that filter index has all blocks that were in the chain before it started.
     {

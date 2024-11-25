@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Bitcoin Core developers
+// Copyright (c) 2023 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,7 +10,6 @@
 #include <test/fuzz/fuzz.h>
 #include <test/fuzz/util.h>
 
-#include <algorithm>
 #include <cstdint>
 #include <vector>
 
@@ -60,9 +59,9 @@ FUZZ_TARGET(bip324_cipher_roundtrip, .init=Initialize)
     InsecureRandomContext rng(provider.ConsumeIntegral<uint64_t>());
 
     // Compare session IDs and garbage terminators.
-    assert(std::ranges::equal(initiator.GetSessionID(), responder.GetSessionID()));
-    assert(std::ranges::equal(initiator.GetSendGarbageTerminator(), responder.GetReceiveGarbageTerminator()));
-    assert(std::ranges::equal(initiator.GetReceiveGarbageTerminator(), responder.GetSendGarbageTerminator()));
+    assert(initiator.GetSessionID() == responder.GetSessionID());
+    assert(initiator.GetSendGarbageTerminator() == responder.GetReceiveGarbageTerminator());
+    assert(initiator.GetReceiveGarbageTerminator() == responder.GetSendGarbageTerminator());
 
     LIMITED_WHILE(provider.remaining_bytes(), 1000) {
         // Mode:

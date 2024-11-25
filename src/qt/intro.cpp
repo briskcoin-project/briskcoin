@@ -1,8 +1,8 @@
-// Copyright (c) 2011-2022 The Bitcoin Core developers
+// Copyright (c) 2011-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitcoin-build-config.h> // IWYU pragma: keep
+#include <config/briskcoin-config.h> // IWYU pragma: keep
 
 #include <chainparams.h>
 #include <qt/intro.h>
@@ -127,16 +127,16 @@ Intro::Intro(QWidget *parent, int64_t blockchain_size_gb, int64_t chain_state_si
     m_prune_target_gb{GetPruneTargetGB()}
 {
     ui->setupUi(this);
-    ui->welcomeLabel->setText(ui->welcomeLabel->text().arg(CLIENT_NAME));
-    ui->storageLabel->setText(ui->storageLabel->text().arg(CLIENT_NAME));
+    ui->welcomeLabel->setText(ui->welcomeLabel->text().arg(PACKAGE_NAME));
+    ui->storageLabel->setText(ui->storageLabel->text().arg(PACKAGE_NAME));
 
     ui->lblExplanation1->setText(ui->lblExplanation1->text()
-        .arg(CLIENT_NAME)
+        .arg(PACKAGE_NAME)
         .arg(m_blockchain_size_gb)
-        .arg(2009)
-        .arg(tr("Bitcoin"))
+        .arg(2023)
+        .arg(tr("Briskcoin"))
     );
-    ui->lblExplanation2->setText(ui->lblExplanation2->text().arg(CLIENT_NAME));
+    ui->lblExplanation2->setText(ui->lblExplanation2->text().arg(PACKAGE_NAME));
 
     const int min_prune_target_GB = std::ceil(MIN_DISK_SPACE_FOR_BLOCK_FILES / 1e9);
     ui->pruneGB->setRange(min_prune_target_GB, std::numeric_limits<int>::max());
@@ -228,7 +228,7 @@ bool Intro::showIfNeeded(bool& did_show_intro, int64_t& prune_MiB)
         /* If current default data directory does not exist, let the user choose one */
         Intro intro(nullptr, Params().AssumedBlockchainSize(), Params().AssumedChainStateSize());
         intro.setDataDirectory(dataDir);
-        intro.setWindowIcon(QIcon(":icons/bitcoin"));
+        intro.setWindowIcon(QIcon(":icons/briskcoin"));
         did_show_intro = true;
 
         while(true)
@@ -246,7 +246,7 @@ bool Intro::showIfNeeded(bool& did_show_intro, int64_t& prune_MiB)
                 }
                 break;
             } catch (const fs::filesystem_error&) {
-                QMessageBox::critical(nullptr, CLIENT_NAME,
+                QMessageBox::critical(nullptr, PACKAGE_NAME,
                     tr("Error: Specified data directory \"%1\" cannot be created.").arg(dataDir));
                 /* fall through, back to choosing screen */
             }
@@ -259,8 +259,8 @@ bool Intro::showIfNeeded(bool& did_show_intro, int64_t& prune_MiB)
         settings.setValue("fReset", false);
     }
     /* Only override -datadir if different from the default, to make it possible to
-     * override -datadir in the bitcoin.conf file in the default data directory
-     * (to be consistent with bitcoind behavior)
+     * override -datadir in the briskcoin.conf file in the default data directory
+     * (to be consistent with briskcoind behavior)
      */
     if(dataDir != GUIUtil::getDefaultDataDirectory()) {
         gArgs.SoftSetArg("-datadir", fs::PathToString(GUIUtil::QStringToPath(dataDir))); // use OS locale for path setting
@@ -389,7 +389,7 @@ void Intro::UpdatePruneLabels(bool prune_checked)
         //: Explanatory text on the capability of the current prune target.
         tr("(sufficient to restore backups %n day(s) old)", "", expected_backup_days));
     ui->sizeWarningLabel->setText(
-        tr("%1 will download and store a copy of the Bitcoin block chain.").arg(CLIENT_NAME) + " " +
+        tr("%1 will download and store a copy of the Briskcoin block chain.").arg(PACKAGE_NAME) + " " +
         storageRequiresMsg.arg(m_required_space_gb) + " " +
         tr("The wallet will also be stored in this directory.")
     );

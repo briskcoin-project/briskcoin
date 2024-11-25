@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-present The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_LOGGING_H
-#define BITCOIN_LOGGING_H
+#ifndef BRISKCOIN_LOGGING_H
+#define BRISKCOIN_LOGGING_H
 
 #include <threadsafety.h>
 #include <tinyformat.h>
@@ -37,41 +37,40 @@ struct LogCategory {
 };
 
 namespace BCLog {
-    using CategoryMask = uint64_t;
-    enum LogFlags : CategoryMask {
-        NONE        = CategoryMask{0},
-        NET         = (CategoryMask{1} <<  0),
-        TOR         = (CategoryMask{1} <<  1),
-        MEMPOOL     = (CategoryMask{1} <<  2),
-        HTTP        = (CategoryMask{1} <<  3),
-        BENCH       = (CategoryMask{1} <<  4),
-        ZMQ         = (CategoryMask{1} <<  5),
-        WALLETDB    = (CategoryMask{1} <<  6),
-        RPC         = (CategoryMask{1} <<  7),
-        ESTIMATEFEE = (CategoryMask{1} <<  8),
-        ADDRMAN     = (CategoryMask{1} <<  9),
-        SELECTCOINS = (CategoryMask{1} << 10),
-        REINDEX     = (CategoryMask{1} << 11),
-        CMPCTBLOCK  = (CategoryMask{1} << 12),
-        RAND        = (CategoryMask{1} << 13),
-        PRUNE       = (CategoryMask{1} << 14),
-        PROXY       = (CategoryMask{1} << 15),
-        MEMPOOLREJ  = (CategoryMask{1} << 16),
-        LIBEVENT    = (CategoryMask{1} << 17),
-        COINDB      = (CategoryMask{1} << 18),
-        QT          = (CategoryMask{1} << 19),
-        LEVELDB     = (CategoryMask{1} << 20),
-        VALIDATION  = (CategoryMask{1} << 21),
-        I2P         = (CategoryMask{1} << 22),
-        IPC         = (CategoryMask{1} << 23),
+    enum LogFlags : uint32_t {
+        NONE        = 0,
+        NET         = (1 <<  0),
+        TOR         = (1 <<  1),
+        MEMPOOL     = (1 <<  2),
+        HTTP        = (1 <<  3),
+        BENCH       = (1 <<  4),
+        ZMQ         = (1 <<  5),
+        WALLETDB    = (1 <<  6),
+        RPC         = (1 <<  7),
+        ESTIMATEFEE = (1 <<  8),
+        ADDRMAN     = (1 <<  9),
+        SELECTCOINS = (1 << 10),
+        REINDEX     = (1 << 11),
+        CMPCTBLOCK  = (1 << 12),
+        RAND        = (1 << 13),
+        PRUNE       = (1 << 14),
+        PROXY       = (1 << 15),
+        MEMPOOLREJ  = (1 << 16),
+        LIBEVENT    = (1 << 17),
+        COINDB      = (1 << 18),
+        QT          = (1 << 19),
+        LEVELDB     = (1 << 20),
+        VALIDATION  = (1 << 21),
+        I2P         = (1 << 22),
+        IPC         = (1 << 23),
 #ifdef DEBUG_LOCKCONTENTION
-        LOCK        = (CategoryMask{1} << 24),
+        LOCK        = (1 << 24),
 #endif
-        BLOCKSTORAGE = (CategoryMask{1} << 25),
-        TXRECONCILIATION = (CategoryMask{1} << 26),
-        SCAN        = (CategoryMask{1} << 27),
-        TXPACKAGES  = (CategoryMask{1} << 28),
-        ALL         = ~NONE,
+        BLOCKSTORAGE = (1 << 25),
+        TXRECONCILIATION = (1 << 26),
+        SCAN        = (1 << 27),
+        TXPACKAGES  = (1 << 28),
+        ALL         = ~(uint32_t)0,
     };
     enum class Level {
         Trace = 0, // High-volume or detailed logging for development/debugging
@@ -105,6 +104,13 @@ namespace BCLog {
         size_t m_cur_buffer_memusage GUARDED_BY(m_cs){0};
         size_t m_buffer_lines_discarded GUARDED_BY(m_cs){0};
 
+        /**
+         * m_started_new_line is a state variable that will suppress printing of
+         * the timestamp when multiple calls are made that don't end in a
+         * newline.
+         */
+        std::atomic_bool m_started_new_line{true};
+
         //! Category-specific log level. Overrides `m_log_level`.
         std::unordered_map<LogFlags, Level> m_category_log_levels GUARDED_BY(m_cs);
 
@@ -113,7 +119,7 @@ namespace BCLog {
         std::atomic<Level> m_log_level{DEFAULT_LOG_LEVEL};
 
         /** Log categories bitfield. */
-        std::atomic<CategoryMask> m_categories{BCLog::NONE};
+        std::atomic<uint32_t> m_categories{BCLog::NONE};
 
         void FormatLogStrInPlace(std::string& str, LogFlags category, Level level, std::string_view source_file, int source_line, std::string_view logging_function, std::string_view threadname, SystemClock::time_point now, std::chrono::seconds mocktime) const;
 
@@ -175,7 +181,7 @@ namespace BCLog {
         /** Disable logging
          * This offers a slight speedup and slightly smaller memory usage
          * compared to leaving the logging system in its default state.
-         * Mostly intended for libbitcoin-kernel apps that don't want any logging.
+         * Mostly intended for libbriskcoin-kernel apps that don't want any logging.
          * Should be used instead of StartLogging().
          */
         void DisableLogging() EXCLUSIVE_LOCKS_REQUIRED(!m_cs);
@@ -198,7 +204,7 @@ namespace BCLog {
         void SetLogLevel(Level level) { m_log_level = level; }
         bool SetLogLevel(std::string_view level);
 
-        CategoryMask GetCategoryMask() const { return m_categories.load(); }
+        uint32_t GetCategoryMask() const { return m_categories.load(); }
 
         void EnableCategory(LogFlags flag);
         bool EnableCategory(std::string_view str);
@@ -238,32 +244,35 @@ static inline bool LogAcceptCategory(BCLog::LogFlags category, BCLog::Level leve
 /** Return true if str parses as a log category and set the flag */
 bool GetLogCategory(BCLog::LogFlags& flag, std::string_view str);
 
+// Be conservative when using functions that
+// unconditionally log to debug.log! It should not be the case that an inbound
+// peer can fill up a user's disk with debug.log entries.
+
 template <typename... Args>
-inline void LogPrintFormatInternal(std::string_view logging_function, std::string_view source_file, const int source_line, const BCLog::LogFlags flag, const BCLog::Level level, util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
+static inline void LogPrintf_(std::string_view logging_function, std::string_view source_file, const int source_line, const BCLog::LogFlags flag, const BCLog::Level level, const char* fmt, const Args&... args)
 {
     if (LogInstance().Enabled()) {
         std::string log_msg;
         try {
             log_msg = tfm::format(fmt, args...);
         } catch (tinyformat::format_error& fmterr) {
-            log_msg = "Error \"" + std::string{fmterr.what()} + "\" while formatting log message: " + fmt.fmt;
+            /* Original format string will have newline so don't add one here */
+            log_msg = "Error \"" + std::string(fmterr.what()) + "\" while formatting log message: " + fmt;
         }
         LogInstance().LogPrintStr(log_msg, logging_function, source_file, source_line, flag, level);
     }
 }
 
-#define LogPrintLevel_(category, level, ...) LogPrintFormatInternal(__func__, __FILE__, __LINE__, category, level, __VA_ARGS__)
+#define LogPrintLevel_(category, level, ...) LogPrintf_(__func__, __FILE__, __LINE__, category, level, __VA_ARGS__)
 
 // Log unconditionally.
-// Be conservative when using functions that unconditionally log to debug.log!
-// It should not be the case that an inbound peer can fill up a user's storage
-// with debug.log entries.
 #define LogInfo(...) LogPrintLevel_(BCLog::LogFlags::ALL, BCLog::Level::Info, __VA_ARGS__)
 #define LogWarning(...) LogPrintLevel_(BCLog::LogFlags::ALL, BCLog::Level::Warning, __VA_ARGS__)
 #define LogError(...) LogPrintLevel_(BCLog::LogFlags::ALL, BCLog::Level::Error, __VA_ARGS__)
 
 // Deprecated unconditional logging.
 #define LogPrintf(...) LogInfo(__VA_ARGS__)
+#define LogPrintfCategory(category, ...) LogPrintLevel_(category, BCLog::Level::Info, __VA_ARGS__)
 
 // Use a macro instead of a function for conditional logging to prevent
 // evaluating arguments when logging for the category is not enabled.
@@ -280,4 +289,7 @@ inline void LogPrintFormatInternal(std::string_view logging_function, std::strin
 #define LogDebug(category, ...) LogPrintLevel(category, BCLog::Level::Debug, __VA_ARGS__)
 #define LogTrace(category, ...) LogPrintLevel(category, BCLog::Level::Trace, __VA_ARGS__)
 
-#endif // BITCOIN_LOGGING_H
+// Deprecated conditional logging
+#define LogPrint(category, ...)  LogDebug(category, __VA_ARGS__)
+
+#endif // BRISKCOIN_LOGGING_H

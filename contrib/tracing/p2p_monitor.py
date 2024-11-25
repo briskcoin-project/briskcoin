@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# Copyright (c) 2021 The Bitcoin Core developers
+# Copyright (c) 2021 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-""" Interactive bitcoind P2P network traffic monitor utilizing USDT and the
+""" Interactive briskcoind P2P network traffic monitor utilizing USDT and the
     net:inbound_message and net:outbound_message tracepoints. """
 
-# This script demonstrates what USDT for Bitcoin Core can enable. It uses BCC
+# This script demonstrates what USDT for Briskcoin Core can enable. It uses BCC
 # (https://github.com/iovisor/bcc) to load a sandboxed eBPF program into the
 # Linux kernel (root privileges are required). The eBPF program attaches to two
 # statically defined tracepoints. The tracepoint 'net:inbound_message' is called
@@ -14,9 +14,8 @@
 # outbound P2P messages. The eBPF program submits the P2P messages to
 # this script via a BPF ring buffer.
 
-import curses
-import os
 import sys
+import curses
 from curses import wrapper, panel
 from bcc import BPF, USDT
 
@@ -116,17 +115,17 @@ class Peer:
             self.total_outbound_msgs += 1
 
 
-def main(pid):
+def main(briskcoind_path):
     peers = dict()
-    print(f"Hooking into bitcoind with pid {pid}")
-    bitcoind_with_usdts = USDT(pid=int(pid))
+
+    briskcoind_with_usdts = USDT(path=str(briskcoind_path))
 
     # attaching the trace functions defined in the BPF program to the tracepoints
-    bitcoind_with_usdts.enable_probe(
+    briskcoind_with_usdts.enable_probe(
         probe="inbound_message", fn_name="trace_inbound_message")
-    bitcoind_with_usdts.enable_probe(
+    briskcoind_with_usdts.enable_probe(
         probe="outbound_message", fn_name="trace_outbound_message")
-    bpf = BPF(text=program, usdt_contexts=[bitcoind_with_usdts])
+    bpf = BPF(text=program, usdt_contexts=[briskcoind_with_usdts])
 
     # BCC: perf buffer handle function for inbound_messages
     def handle_inbound(_, data, size):
@@ -246,14 +245,9 @@ def render(screen, peers, cur_list_pos, scroll, ROWS_AVALIABLE_FOR_LIST, info_pa
                         (msg.msg_type, msg.size), curses.A_NORMAL)
 
 
-def running_as_root():
-    return os.getuid() == 0
-
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("USAGE:", sys.argv[0], "<pid of bitcoind>")
+    if len(sys.argv) < 2:
+        print("USAGE:", sys.argv[0], "path/to/briskcoind")
         exit()
-    if not running_as_root():
-        print("You might not have the privileges required to hook into the tracepoints!")
-    pid = sys.argv[1]
-    main(pid)
+    path = sys.argv[1]
+    main(path)

@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022 The Bitcoin Core developers
+// Copyright (c) 2021-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -143,7 +143,6 @@ const std::vector<std::string> RPC_COMMANDS_SAFE_FOR_FUZZING{
     "getnetworkhashps",
     "getnetworkinfo",
     "getnodeaddresses",
-    "getorphantxs",
     "getpeerinfo",
     "getprioritisedtransactions",
     "getrawaddrman",

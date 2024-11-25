@@ -1,9 +1,9 @@
-// Copyright (c) 2019-2022 The Bitcoin Core developers
+// Copyright (c) 2019-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_WALLET_SCRIPTPUBKEYMAN_H
-#define BITCOIN_WALLET_SCRIPTPUBKEYMAN_H
+#ifndef BRISKCOIN_WALLET_SCRIPTPUBKEYMAN_H
+#define BRISKCOIN_WALLET_SCRIPTPUBKEYMAN_H
 
 #include <addresstype.h>
 #include <common/messages.h>
@@ -71,7 +71,7 @@ std::vector<CKeyID> GetAffectedKeys(const CScript& spk, const SigningProvider& p
  * are sets of keys that have not yet been used to provide addresses or receive
  * change.
  *
- * The Bitcoin Core wallet was originally a collection of unrelated private
+ * The Briskcoin Core wallet was originally a collection of unrelated private
  * keys with their associated addresses. If a non-HD wallet generated a
  * key/address, gave that address out and then restored a backup from before
  * that key's generation, then any funds sent to that address would be
@@ -254,9 +254,9 @@ public:
 
     /** Prepends the wallet name in logging output to ease debugging in multi-wallet use cases */
     template <typename... Params>
-    void WalletLogPrintf(util::ConstevalFormatString<sizeof...(Params)> wallet_fmt, const Params&... params) const
+    void WalletLogPrintf(const char* fmt, Params... parameters) const
     {
-        LogInfo("%s %s", m_storage.GetDisplayName(), tfm::format(wallet_fmt, params...));
+        LogPrintf(("%s " + std::string{fmt}).c_str(), m_storage.GetDisplayName(), parameters...);
     };
 
     /** Watch-only address added */
@@ -366,9 +366,8 @@ public:
     /** Get the DescriptorScriptPubKeyMans (with private keys) that have the same scriptPubKeys as this LegacyScriptPubKeyMan.
      * Does not modify this ScriptPubKeyMan. */
     std::optional<MigrationData> MigrateToDescriptor();
-    /** Delete all the records of this LegacyScriptPubKeyMan from disk*/
+    /** Delete all the records ofthis LegacyScriptPubKeyMan from disk*/
     bool DeleteRecords();
-    bool DeleteRecordsWithDB(WalletBatch& batch);
 };
 
 // Implements the full legacy wallet behavior
@@ -520,7 +519,7 @@ public:
 
     bool ImportScripts(const std::set<CScript> scripts, int64_t timestamp) EXCLUSIVE_LOCKS_REQUIRED(cs_KeyStore);
     bool ImportPrivKeys(const std::map<CKeyID, CKey>& privkey_map, const int64_t timestamp) EXCLUSIVE_LOCKS_REQUIRED(cs_KeyStore);
-    bool ImportPubKeys(const std::vector<std::pair<CKeyID, bool>>& ordered_pubkeys, const std::map<CKeyID, CPubKey>& pubkey_map, const std::map<CKeyID, std::pair<CPubKey, KeyOriginInfo>>& key_origins, const bool add_keypool, const int64_t timestamp) EXCLUSIVE_LOCKS_REQUIRED(cs_KeyStore);
+    bool ImportPubKeys(const std::vector<CKeyID>& ordered_pubkeys, const std::map<CKeyID, CPubKey>& pubkey_map, const std::map<CKeyID, std::pair<CPubKey, KeyOriginInfo>>& key_origins, const bool add_keypool, const bool internal, const int64_t timestamp) EXCLUSIVE_LOCKS_REQUIRED(cs_KeyStore);
     bool ImportScriptPubKeys(const std::set<CScript>& script_pub_keys, const bool have_solving_data, const int64_t timestamp) EXCLUSIVE_LOCKS_REQUIRED(cs_KeyStore);
 
     /* Returns true if the wallet can generate new keys */
@@ -583,7 +582,6 @@ public:
 
 class DescriptorScriptPubKeyMan : public ScriptPubKeyMan
 {
-    friend class LegacyDataSPKM;
 private:
     using ScriptPubKeyMap = std::map<CScript, int32_t>; // Map of scripts to descriptor range index
     using PubKeyMap = std::map<CPubKey, int32_t>; // Map of pubkeys involved in scripts to descriptor range index
@@ -715,4 +713,4 @@ struct MigrationData
 
 } // namespace wallet
 
-#endif // BITCOIN_WALLET_SCRIPTPUBKEYMAN_H
+#endif // BRISKCOIN_WALLET_SCRIPTPUBKEYMAN_H

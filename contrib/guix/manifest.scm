@@ -1,4 +1,5 @@
 (use-modules (gnu packages)
+             (gnu packages autotools)
              ((gnu packages bash) #:select (bash-minimal))
              (gnu packages bison)
              ((gnu packages certs) #:select (nss-certs))
@@ -21,6 +22,7 @@
              ((gnu packages tls) #:select (openssl))
              ((gnu packages version-control) #:select (git-minimal))
              (guix build-system cmake)
+             (guix build-system gnu)
              (guix build-system python)
              (guix build-system trivial)
              (guix download)
@@ -90,18 +92,28 @@ chain for " target " development."))
       (home-page (package-home-page xgcc))
       (license (package-license xgcc)))))
 
-(define base-gcc gcc-12) ;; 12.4.0
+(define base-gcc
+  (package
+    (inherit gcc-12) ;; 12.3.0
+    (version "12.4.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://gnu/gcc/gcc-"
+                                  version "/gcc-" version ".tar.xz"))
+              (sha256
+               (base32
+                "0xcida8l2wykvvzvpcrcn649gj0ijn64gwxbplacpg6c0hk6akvh"))))))
 
 (define base-linux-kernel-headers linux-libre-headers-6.1)
 
-(define* (make-bitcoin-cross-toolchain target
+(define* (make-briskcoin-cross-toolchain target
                                        #:key
                                        (base-gcc-for-libc linux-base-gcc)
                                        (base-kernel-headers base-linux-kernel-headers)
                                        (base-libc glibc-2.31)
                                        (base-gcc linux-base-gcc))
   "Convenience wrapper around MAKE-CROSS-TOOLCHAIN with default values
-desirable for building Bitcoin Core release binaries."
+desirable for building Briskcoin Core release binaries."
   (make-cross-toolchain target
                         base-gcc-for-libc
                         base-kernel-headers
@@ -153,7 +165,7 @@ chain for " target " development."))
 ;; While LIEF is packaged in Guix, we maintain our own package,
 ;; to simplify building, and more easily apply updates.
 ;; Moreover, the Guix's package uses cmake, which caused build
-;; failure; see https://github.com/bitcoin/bitcoin/pull/27296.
+;; failure; see https://github.com/briskcoin/briskcoin/pull/27296.
 (define-public python-lief
   (package
     (name "python-lief")
@@ -434,7 +446,6 @@ inspecting signatures in Mach-O binaries.")
                   "--enable-default-ssp=yes",
                   "--enable-default-pie=yes",
                   "--enable-standard-branch-protection=yes",
-                  "--enable-cet=yes",
                   building-on)))
         ((#:phases phases)
           `(modify-phases ,phases
@@ -469,7 +480,6 @@ inspecting signatures in Mach-O binaries.")
           `(append ,flags
             ;; https://www.gnu.org/software/libc/manual/html_node/Configuring-and-compiling.html
             (list "--enable-stack-protector=all",
-                  "--enable-cet",
                   "--enable-bind-now",
                   "--disable-werror",
                   building-on)))
@@ -512,6 +522,9 @@ inspecting signatures in Mach-O binaries.")
         gcc-toolchain-12
         cmake-minimal
         gnu-make
+        libtool
+        autoconf-2.71
+        automake
         pkg-config
         ;; Scripting
         python-minimal ;; (3.10)
@@ -529,7 +542,7 @@ inspecting signatures in Mach-O binaries.")
           ((string-contains target "-linux-")
            (list bison
                  (list gcc-toolchain-12 "static")
-                 (make-bitcoin-cross-toolchain target)))
+                 (make-briskcoin-cross-toolchain target)))
           ((string-contains target "darwin")
            (list clang-toolchain-18
                  lld-18

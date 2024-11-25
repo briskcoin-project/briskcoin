@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022 The Bitcoin Core developers
+// Copyright (c) 2021-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -214,8 +214,9 @@ FUZZ_TARGET(tx_pool_standard, .init = initialize_tx_pool)
     // Helper to query an amount
     const CCoinsViewMemPool amount_view{WITH_LOCK(::cs_main, return &chainstate.CoinsTip()), tx_pool};
     const auto GetAmount = [&](const COutPoint& outpoint) {
-        auto coin{amount_view.GetCoin(outpoint).value()};
-        return coin.out.nValue;
+        Coin c;
+        Assert(amount_view.GetCoin(outpoint, c));
+        return c.out.nValue;
     };
 
     LIMITED_WHILE(fuzzed_data_provider.ConsumeBool(), 300)

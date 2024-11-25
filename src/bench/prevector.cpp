@@ -1,15 +1,13 @@
-// Copyright (c) 2015-2022 The Bitcoin Core developers
+// Copyright (c) 2015-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <prevector.h>
-
-#include <bench/bench.h>
 #include <serialize.h>
 #include <streams.h>
-
 #include <type_traits>
-#include <vector>
+
+#include <bench/bench.h>
 
 struct nontrivial_t {
     int x{-1};

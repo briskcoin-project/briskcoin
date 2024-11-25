@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -16,7 +16,6 @@
 #include <util/fs.h>
 #include <util/fs_helpers.h>
 #include <util/strencodings.h>
-#include <util/string.h>
 
 #ifdef WIN32
 #include <codecvt>    /* for codecvt_utf8_utf16 */
@@ -36,8 +35,8 @@
 #include <utility>
 #include <variant>
 
-const char * const BITCOIN_CONF_FILENAME = "bitcoin.conf";
-const char * const BITCOIN_SETTINGS_FILENAME = "settings.json";
+const char * const BRISKCOIN_CONF_FILENAME = "briskcoin.conf";
+const char * const BRISKCOIN_SETTINGS_FILENAME = "settings.json";
 
 ArgsManager gArgs;
 
@@ -184,7 +183,7 @@ bool ArgsManager::ParseParameters(int argc, const char* const argv[], std::strin
     for (int i = 1; i < argc; i++) {
         std::string key(argv[i]);
 
-#ifdef __APPLE__
+#ifdef MAC_OSX
         // At the first time when a user gets the "App downloaded from the
         // internet" warning, and clicks the Open button, macOS passes
         // a unique process serial number (PSN) as -psn_... command-line
@@ -192,7 +191,7 @@ bool ArgsManager::ParseParameters(int argc, const char* const argv[], std::strin
         if (key.substr(0, 5) == "-psn_") continue;
 #endif
 
-        if (key == "-") break; //bitcoin-tx using stdin
+        if (key == "-") break; //briskcoin-tx using stdin
         std::optional<std::string> val;
         size_t is_index = key.find('=');
         if (is_index != std::string::npos) {
@@ -375,7 +374,7 @@ bool ArgsManager::IsArgSet(const std::string& strArg) const
 
 bool ArgsManager::GetSettingsPath(fs::path* filepath, bool temp, bool backup) const
 {
-    fs::path settings = GetPathArg("-settings", BITCOIN_SETTINGS_FILENAME);
+    fs::path settings = GetPathArg("-settings", BRISKCOIN_SETTINGS_FILENAME);
     if (settings.empty()) {
         return false;
     }
@@ -589,23 +588,6 @@ void ArgsManager::AddHiddenArgs(const std::vector<std::string>& names)
     }
 }
 
-void ArgsManager::CheckMultipleCLIArgs() const
-{
-    LOCK(cs_args);
-    std::vector<std::string> found{};
-    auto cmds = m_available_args.find(OptionsCategory::CLI_COMMANDS);
-    if (cmds != m_available_args.end()) {
-        for (const auto& [cmd, argspec] : cmds->second) {
-            if (IsArgSet(cmd)) {
-                found.push_back(cmd);
-            }
-        }
-        if (found.size() > 1) {
-            throw std::runtime_error(strprintf("Only one of %s may be specified.", util::Join(found, ", ")));
-        }
-    }
-}
-
 std::string ArgsManager::GetHelpMessage() const
 {
     const bool show_debug = GetBoolArg("-help-debug", false);
@@ -635,9 +617,6 @@ std::string ArgsManager::GetHelpMessage() const
             case OptionsCategory::RPC:
                 usage += HelpMessageGroup("RPC server options:");
                 break;
-            case OptionsCategory::IPC:
-                usage += HelpMessageGroup("IPC interprocess connection options:");
-                break;
             case OptionsCategory::WALLET:
                 usage += HelpMessageGroup("Wallet options:");
                 break;
@@ -655,9 +634,6 @@ std::string ArgsManager::GetHelpMessage() const
                 break;
             case OptionsCategory::REGISTER_COMMANDS:
                 usage += HelpMessageGroup("Register Commands:");
-                break;
-            case OptionsCategory::CLI_COMMANDS:
-                usage += HelpMessageGroup("CLI Commands:");
                 break;
             default:
                 break;
@@ -688,8 +664,8 @@ bool HelpRequested(const ArgsManager& args)
 
 void SetupHelpOptions(ArgsManager& args)
 {
-    args.AddArg("-help", "Print this help message and exit (also -h or -?)", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
-    args.AddHiddenArgs({"-h", "-?"});
+    args.AddArg("-?", "Print this help message and exit", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
+    args.AddHiddenArgs({"-h", "-help"});
 }
 
 static const int screenWidth = 79;
@@ -709,7 +685,6 @@ std::string HelpMessageOpt(const std::string &option, const std::string &message
 
 const std::vector<std::string> TEST_OPTIONS_DOC{
     "addrman (use deterministic addrman)",
-    "bip94 (enforce BIP94 consensus rules)",
 };
 
 bool HasTestOption(const ArgsManager& args, const std::string& test_option)
@@ -723,18 +698,18 @@ bool HasTestOption(const ArgsManager& args, const std::string& test_option)
 fs::path GetDefaultDataDir()
 {
     // Windows:
-    //   old: C:\Users\Username\AppData\Roaming\Bitcoin
-    //   new: C:\Users\Username\AppData\Local\Bitcoin
-    // macOS: ~/Library/Application Support/Bitcoin
-    // Unix-like: ~/.bitcoin
+    //   old: C:\Users\Username\AppData\Roaming\Briskcoin
+    //   new: C:\Users\Username\AppData\Local\Briskcoin
+    // macOS: ~/Library/Application Support/Briskcoin
+    // Unix-like: ~/.briskcoin
 #ifdef WIN32
     // Windows
     // Check for existence of datadir in old location and keep it there
-    fs::path legacy_path = GetSpecialFolderPath(CSIDL_APPDATA) / "Bitcoin";
+    fs::path legacy_path = GetSpecialFolderPath(CSIDL_APPDATA) / "Briskcoin";
     if (fs::exists(legacy_path)) return legacy_path;
 
     // Otherwise, fresh installs can start in the new, "proper" location
-    return GetSpecialFolderPath(CSIDL_LOCAL_APPDATA) / "Bitcoin";
+    return GetSpecialFolderPath(CSIDL_LOCAL_APPDATA) / "Briskcoin";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
@@ -742,12 +717,12 @@ fs::path GetDefaultDataDir()
         pathRet = fs::path("/");
     else
         pathRet = fs::path(pszHome);
-#ifdef __APPLE__
+#ifdef MAC_OSX
     // macOS
-    return pathRet / "Library/Application Support/Bitcoin";
+    return pathRet / "Library/Application Support/Briskcoin";
 #else
     // Unix-like
-    return pathRet / ".bitcoin";
+    return pathRet / ".briskcoin";
 #endif
 #endif
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2022 The Bitcoin Core developers
+// Copyright (c) 2011-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -27,7 +27,6 @@
 
 #include <boost/test/unit_test.hpp>
 
-using namespace util::hex_literals;
 using node::BlockAssembler;
 using node::CBlockTemplate;
 
@@ -183,7 +182,7 @@ void MinerTestingSetup::TestPackageSelection(const CScript& scriptPubKey, const 
     tx.vin[0].prevout.hash = txFirst[2]->GetHash();
     tx.vout.resize(2);
     tx.vout[0].nValue = 5000000000LL - 100000000;
-    tx.vout[1].nValue = 100000000; // 1BTC output
+    tx.vout[1].nValue = 100000000; // 1BKC output
     Txid hashFreeTx2 = tx.GetHash();
     tx_mempool.addUnchecked(entry.Fee(0).SpendsCoinbase(true).FromTx(tx));
 
@@ -368,7 +367,7 @@ void MinerTestingSetup::TestBasicMining(const CScript& scriptPubKey, const std::
         while (m_node.chainman->ActiveChain().Tip()->nHeight < 209999) {
             CBlockIndex* prev = m_node.chainman->ActiveChain().Tip();
             CBlockIndex* next = new CBlockIndex();
-            next->phashBlock = new uint256(m_rng.rand256());
+            next->phashBlock = new uint256(InsecureRand256());
             m_node.chainman->ActiveChainstate().CoinsTip().SetBestBlock(next->GetBlockHash());
             next->pprev = prev;
             next->nHeight = prev->nHeight + 1;
@@ -380,7 +379,7 @@ void MinerTestingSetup::TestBasicMining(const CScript& scriptPubKey, const std::
         while (m_node.chainman->ActiveChain().Tip()->nHeight < 210000) {
             CBlockIndex* prev = m_node.chainman->ActiveChain().Tip();
             CBlockIndex* next = new CBlockIndex();
-            next->phashBlock = new uint256(m_rng.rand256());
+            next->phashBlock = new uint256(InsecureRand256());
             m_node.chainman->ActiveChainstate().CoinsTip().SetBestBlock(next->GetBlockHash());
             next->pprev = prev;
             next->nHeight = prev->nHeight + 1;
@@ -608,7 +607,7 @@ void MinerTestingSetup::TestPrioritisedMining(const CScript& scriptPubKey, const
 BOOST_AUTO_TEST_CASE(CreateNewBlock_validity)
 {
     // Note that by default, these tests run with size accounting enabled.
-    CScript scriptPubKey = CScript() << "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f"_hex << OP_CHECKSIG;
+    CScript scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     std::unique_ptr<CBlockTemplate> pblocktemplate;
 
     CTxMemPool& tx_mempool{*m_node.mempool};

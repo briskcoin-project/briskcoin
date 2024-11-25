@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2022 The Bitcoin Core developers
+# Copyright (c) 2015-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the ZMQ notification interface."""
@@ -18,7 +18,7 @@ from test_framework.blocktools import (
     create_block,
     create_coinbase,
 )
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.messages import (
     CBlock,
     hash256,
@@ -105,7 +105,7 @@ class ZMQTestSetupBlock:
         )
 
 
-class ZMQTest (BitcoinTestFramework):
+class ZMQTest (BriskcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 2
         # whitelist peers to speed up tx relay / mempool sync
@@ -114,7 +114,7 @@ class ZMQTest (BitcoinTestFramework):
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_py3_zmq()
-        self.skip_if_no_bitcoind_zmq()
+        self.skip_if_no_briskcoind_zmq()
 
     def run_test(self):
         self.wallet = MiniWallet(self.nodes[0])
@@ -489,8 +489,13 @@ class ZMQTest (BitcoinTestFramework):
         mempool_snapshot = self.nodes[0].getrawmempool(mempool_sequence=True)
         mempool_view = set(mempool_snapshot["txids"])
         get_raw_seq = mempool_snapshot["mempool_sequence"]
-        assert_equal(get_raw_seq, num_txs + 1)
-        assert zmq_mem_seq < get_raw_seq
+        assert_equal(get_raw_seq, 6)
+        # Snapshot may be too old compared to zmq message we read off latest
+        while zmq_mem_seq >= get_raw_seq:
+            sleep(2)
+            mempool_snapshot = self.nodes[0].getrawmempool(mempool_sequence=True)
+            mempool_view = set(mempool_snapshot["txids"])
+            get_raw_seq = mempool_snapshot["mempool_sequence"]
 
         # Things continue to happen in the "interim" while waiting for snapshot results
         # We have node 0 do all these to avoid p2p races with RBF announcements

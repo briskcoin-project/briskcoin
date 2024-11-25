@@ -1,22 +1,15 @@
-// Copyright (c) 2016-2022 The Bitcoin Core developers
+// Copyright (c) 2016-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
-#include <hash.h>
 #include <key.h>
-#include <primitives/transaction.h>
-#include <pubkey.h>
-#include <script/interpreter.h>
 #include <script/script.h>
-#include <span.h>
+#include <script/interpreter.h>
+#include <streams.h>
 #include <test/util/transaction_utils.h>
-#include <uint256.h>
 
 #include <array>
-#include <cassert>
-#include <cstdint>
-#include <vector>
 
 // Microbenchmark for verification of a basic P2WPKH script. Can be easily
 // modified to measure performance of other types of scripts.

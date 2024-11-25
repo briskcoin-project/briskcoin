@@ -1,9 +1,9 @@
-// Copyright (c) 2017-2022 The Bitcoin Core developers
+// Copyright (c) 2017-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_RPC_BLOCKCHAIN_H
-#define BITCOIN_RPC_BLOCKCHAIN_H
+#ifndef BRISKCOIN_RPC_BLOCKCHAIN_H
+#define BRISKCOIN_RPC_BLOCKCHAIN_H
 
 #include <consensus/amount.h>
 #include <core_io.h>
@@ -35,6 +35,9 @@ static constexpr int NUM_GETBLOCKSTATS_PERCENTILES = 5;
  */
 double GetDifficulty(const CBlockIndex& blockindex);
 
+/** Callback for when block tip changed. */
+void RPCNotifyBlockChange(const CBlockIndex*);
+
 /** Block description to JSON */
 UniValue blockToJSON(node::BlockManager& blockman, const CBlock& block, const CBlockIndex& tip, const CBlockIndex& blockindex, TxVerbosity verbosity) LOCKS_EXCLUDED(cs_main);
 
@@ -45,7 +48,7 @@ UniValue blockheaderToJSON(const CBlockIndex& tip, const CBlockIndex& blockindex
 void CalculatePercentilesByWeight(CAmount result[NUM_GETBLOCKSTATS_PERCENTILES], std::vector<std::pair<CAmount, int64_t>>& scores, int64_t total_weight);
 
 /**
- * Test-only helper to create UTXO snapshots given a chainstate and a file handle.
+ * Helper to create UTXO snapshots given a chainstate and a file handle.
  * @return a UniValue map containing metadata about the snapshot.
  */
 UniValue CreateUTXOSnapshot(
@@ -57,6 +60,5 @@ UniValue CreateUTXOSnapshot(
 
 //! Return height of highest block that has been pruned, or std::nullopt if no blocks have been pruned
 std::optional<int> GetPruneHeight(const node::BlockManager& blockman, const CChain& chain) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
-void CheckBlockDataAvailability(node::BlockManager& blockman, const CBlockIndex& blockindex, bool check_for_undo) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
-#endif // BITCOIN_RPC_BLOCKCHAIN_H
+#endif // BRISKCOIN_RPC_BLOCKCHAIN_H

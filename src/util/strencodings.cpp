@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -44,6 +44,16 @@ bool IsHex(std::string_view str)
         if (HexDigit(c) < 0) return false;
     }
     return (str.size() > 0) && (str.size()%2 == 0);
+}
+
+bool IsHexNumber(std::string_view str)
+{
+    if (str.substr(0, 2) == "0x") str.remove_prefix(2);
+    for (char c : str) {
+        if (HexDigit(c) < 0) return false;
+    }
+    // Return false for empty string or "0x".
+    return str.size() > 0;
 }
 
 template <typename Byte>

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2022 The Bitcoin Core developers
+# Copyright (c) 2014-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test fee estimation code."""
 from copy import deepcopy
-from decimal import Decimal, ROUND_DOWN
+from decimal import Decimal
 import os
 import random
 import time
@@ -12,7 +12,7 @@ import time
 from test_framework.messages import (
     COIN,
 )
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.util import (
     assert_equal,
     assert_greater_than,
@@ -40,7 +40,7 @@ def small_txpuzzle_randfee(
     # Exponentially distributed from 1-128 * fee_increment
     rand_fee = float(fee_increment) * (1.1892 ** random.randint(0, 28))
     # Total fee ranges from min_fee to min_fee + 127*fee_increment
-    fee = min_fee - fee_increment + satoshi_round(rand_fee, rounding=ROUND_DOWN)
+    fee = min_fee - fee_increment + satoshi_round(rand_fee)
     utxos_to_spend = []
     total_in = Decimal("0.00000000")
     while total_in <= (amount + fee) and len(conflist) > 0:
@@ -137,7 +137,7 @@ def check_fee_estimates_btw_modes(node, expected_conservative, expected_economic
     assert_equal(fee_est_default, expected_economical)
 
 
-class EstimateFeeTest(BitcoinTestFramework):
+class EstimateFeeTest(BriskcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 3
         # whitelist peers to speed up tx relay / mempool sync
@@ -398,7 +398,6 @@ class EstimateFeeTest(BitcoinTestFramework):
         self.start_node(0)
         self.connect_nodes(0, 1)
         self.connect_nodes(0, 2)
-        self.sync_blocks()
         assert_equal(self.nodes[0].estimatesmartfee(1)["errors"], ["Insufficient data or no feerate found"])
 
     def broadcast_and_mine(self, broadcaster, miner, feerate, count):

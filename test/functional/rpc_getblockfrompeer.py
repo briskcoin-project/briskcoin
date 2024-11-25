@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020-2022 The Bitcoin Core developers
+# Copyright (c) 2020-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the getblockfrompeer RPC."""
@@ -15,14 +15,14 @@ from test_framework.p2p import (
     P2P_SERVICES,
     P2PInterface,
 )
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.util import (
     assert_equal,
     assert_raises_rpc_error,
 )
 
 
-class GetBlockFromPeerTest(BitcoinTestFramework):
+class GetBlockFromPeerTest(BriskcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 3
         self.extra_args = [
@@ -58,7 +58,7 @@ class GetBlockFromPeerTest(BitcoinTestFramework):
         self.log.info("Node 0 should only have the header for node 1's block 3")
         x = next(filter(lambda x: x['hash'] == short_tip, self.nodes[0].getchaintips()))
         assert_equal(x['status'], "headers-only")
-        assert_raises_rpc_error(-1, "Block not available (not fully downloaded)", self.nodes[0].getblock, short_tip)
+        assert_raises_rpc_error(-1, "Block not found on disk", self.nodes[0].getblock, short_tip)
 
         self.log.info("Fetch block from node 1")
         peers = self.nodes[0].getpeerinfo()

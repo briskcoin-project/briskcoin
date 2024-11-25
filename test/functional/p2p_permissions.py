@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2022 The Bitcoin Core developers
+# Copyright (c) 2015-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test p2p permission message.
@@ -12,17 +12,15 @@ from test_framework.messages import (
 )
 from test_framework.p2p import P2PDataStore
 from test_framework.test_node import ErrorMatch
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.util import (
-    append_config,
     assert_equal,
     p2p_port,
-    tor_port,
 )
 from test_framework.wallet import MiniWallet
 
 
-class P2PPermissionsTests(BitcoinTestFramework):
+class P2PPermissionsTests(BriskcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 2
 
@@ -59,14 +57,11 @@ class P2PPermissionsTests(BitcoinTestFramework):
         # by modifying the configuration file.
         ip_port = "127.0.0.1:{}".format(p2p_port(1))
         self.nodes[1].replace_in_config([("bind=127.0.0.1", "whitebind=bloomfilter,forcerelay@" + ip_port)])
-        # Explicitly bind the tor port to prevent collisions with the default tor port
-        append_config(self.nodes[1].datadir_path, [f"bind=127.0.0.1:{tor_port(self.nodes[1].index)}=onion"])
         self.checkpermission(
             ["-whitelist=noban@127.0.0.1"],
             # Check parameter interaction forcerelay should activate relay
             ["noban", "bloomfilter", "forcerelay", "relay", "download"])
         self.nodes[1].replace_in_config([("whitebind=bloomfilter,forcerelay@" + ip_port, "bind=127.0.0.1")])
-        self.nodes[1].replace_in_config([(f"bind=127.0.0.1:{tor_port(self.nodes[1].index)}=onion", "")])
 
         self.checkpermission(
             # legacy whitelistrelay should be ignored

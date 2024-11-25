@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2021-2022 The Bitcoin Core developers
+# Copyright (c) 2021-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test generation and spending of P2TR addresses."""
@@ -10,7 +10,7 @@ import uuid
 from decimal import Decimal
 from test_framework.address import output_key_to_p2tr
 from test_framework.key import H_POINT
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.util import assert_equal
 from test_framework.descriptors import descsum_create
 from test_framework.script import (
@@ -57,7 +57,7 @@ KEYS = [
     },
     {
         "xprv": "tprv8ZgxMBicQKsPdKziibn63Rm6aNzp7dSjDnufZMStXr71Huz7iihCRpbZZZ6Voy5HyuHCWx6foHMipzMzUq4tZrtkZ24DJwz5EeNWdsuwX5h",
-        "xpub": "tpubD6NzVbkrYhZ4Wo2WcFSgSqRD9QWkGxddo6WSqsVBx7uQ8QEtM7WncKDRjhFEexK119NigyCsFygA4b7sAPQxqebyFGAZ9XVV1BtcgNzbCRR",
+        "xpub": "tpubD6NzVbkrYhZ4Wo2WcFSgSqRD9QWkGxddo6WSqsVBx7uQ8QEtM7WncKDRjhFEexK119NigyCsFygA4b7sAPQxqebyFGAZ9XVV1BkcgNzbCRR",
         "pubs": [
             "03a669ea926f381582ec4a000b9472ba8a17347f5fb159eddd4a07036a6718eb",
             "bbf56b14b119bccafb686adec2e3d2a6b51b1626213590c3afa815d1fd36f85d",
@@ -184,7 +184,7 @@ def compute_taproot_address(pubkey, scripts):
 def compute_raw_taproot_address(pubkey):
     return encode_segwit_address("bcrt", 1, pubkey)
 
-class WalletTaprootTest(BitcoinTestFramework):
+class WalletTaprootTest(BriskcoinTestFramework):
     """Test generation and spending of P2TR address outputs."""
 
     def add_options(self, parser):

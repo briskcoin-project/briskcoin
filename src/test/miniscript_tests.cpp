@@ -1,6 +1,10 @@
-// Copyright (c) 2019-2022 The Bitcoin Core developers
+// Copyright (c) 2019-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <stdint.h>
+#include <string>
+#include <vector>
 
 #include <test/util/random.h>
 #include <test/util/setup_common.h>
@@ -17,13 +21,6 @@
 #include <script/miniscript.h>
 #include <script/script_error.h>
 #include <script/signingprovider.h>
-
-#include <algorithm>
-#include <cstdint>
-#include <string>
-#include <vector>
-
-using namespace util::hex_literals;
 
 namespace {
 
@@ -277,7 +274,7 @@ public:
         XOnlyPubKey pk{pubkey};
         auto it = g_testdata->schnorr_signatures.find(pk);
         if (it == g_testdata->schnorr_signatures.end()) return false;
-        return std::ranges::equal(sig, it->second);
+        return sig == it->second;
     }
 
     bool CheckLockTime(const CScriptNum& locktime) const override {
@@ -293,7 +290,7 @@ public:
 
 using Fragment = miniscript::Fragment;
 using NodeRef = miniscript::NodeRef<CPubKey>;
-using miniscript::operator""_mst;
+using miniscript::operator"" _mst;
 using Node = miniscript::Node<CPubKey>;
 
 /** Compute all challenges (pubkeys, hashes, timelocks) that occur in a given Miniscript. */
@@ -343,14 +340,13 @@ void SatisfactionToWitness(miniscript::MiniscriptContext ctx, CScriptWitness& wi
     witness.stack.push_back(*builder.GetSpendData().scripts.begin()->second.begin());
 }
 
-struct MiniScriptTest : BasicTestingSetup {
 /** Run random satisfaction tests. */
 void TestSatisfy(const KeyConverter& converter, const std::string& testcase, const NodeRef& node) {
     auto script = node->ToScript(converter);
     auto challenges = FindChallenges(node); // Find all challenges in the generated miniscript.
     std::vector<Challenge> challist(challenges.begin(), challenges.end());
     for (int iter = 0; iter < 3; ++iter) {
-        std::shuffle(challist.begin(), challist.end(), m_rng);
+        std::shuffle(challist.begin(), challist.end(), g_insecure_rand_ctx);
         Satisfier satisfier(converter.MsContext());
         TestSignatureChecker checker(satisfier);
         bool prev_mal_success = false, prev_nonmal_success = false;
@@ -492,11 +488,10 @@ void Test(const std::string& ms, const std::string& hexscript, const std::string
          /*opslimit=*/-1, /*stacklimit=*/-1,
          /*max_wit_size=*/std::nullopt, /*max_tap_wit_size=*/std::nullopt, /*stack_exec=*/std::nullopt);
 }
-}; // struct MiniScriptTest
 
 } // namespace
 
-BOOST_FIXTURE_TEST_SUITE(miniscript_tests, MiniScriptTest)
+BOOST_FIXTURE_TEST_SUITE(miniscript_tests, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(fixed_tests)
 {
@@ -598,11 +593,11 @@ BOOST_AUTO_TEST_CASE(fixed_tests)
     //  - no pubkey before the CHECKSIG
     constexpr KeyConverter tap_converter{miniscript::MiniscriptContext::TAPSCRIPT};
     constexpr KeyConverter wsh_converter{miniscript::MiniscriptContext::P2WSH};
-    const auto no_pubkey{"ac519c"_hex_u8};
+    const auto no_pubkey{ParseHex("ac519c")};
     BOOST_CHECK(miniscript::FromScript({no_pubkey.begin(), no_pubkey.end()}, tap_converter) == nullptr);
-    const auto incomplete_multi_a{"ba20c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5ba519c"_hex_u8};
+    const auto incomplete_multi_a{ParseHex("ba20c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5ba519c")};
     BOOST_CHECK(miniscript::FromScript({incomplete_multi_a.begin(), incomplete_multi_a.end()}, tap_converter) == nullptr);
-    const auto incomplete_multi_a_2{"ac2079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798ac20c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5ba519c"_hex_u8};
+    const auto incomplete_multi_a_2{ParseHex("ac2079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798ac20c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5ba519c")};
     BOOST_CHECK(miniscript::FromScript({incomplete_multi_a_2.begin(), incomplete_multi_a_2.end()}, tap_converter) == nullptr);
     // Can use multi_a under Tapscript but not P2WSH.
     Test("and_v(v:multi_a(2,03d01115d548e7561b15c38f004d734633687cf4419620095bc5b0f47070afe85a,025601570cb47f238d2b0286db4a990fa0f3ba28d1a319f5e7cf55c2a2444da7cc),after(1231488000))", "?", "20d01115d548e7561b15c38f004d734633687cf4419620095bc5b0f47070afe85aac205601570cb47f238d2b0286db4a990fa0f3ba28d1a319f5e7cf55c2a2444da7ccba529d0400046749b1", TESTMODE_VALID | TESTMODE_NONMAL | TESTMODE_NEEDSIG | TESTMODE_P2WSH_INVALID, 4, 2, {}, {}, 3);
@@ -647,12 +642,12 @@ BOOST_AUTO_TEST_CASE(fixed_tests)
 
     // Misc unit tests
     // A Script with a non minimal push is invalid
-    constexpr auto nonminpush{"0000210232780000feff00ffffffffffff21ff005f00ae21ae00000000060602060406564c2102320000060900fe00005f00ae21ae00100000060606060606000000000000000000000000000000000000000000000000000000000000000000"_hex_u8};
+    std::vector<unsigned char> nonminpush = ParseHex("0000210232780000feff00ffffffffffff21ff005f00ae21ae00000000060602060406564c2102320000060900fe00005f00ae21ae00100000060606060606000000000000000000000000000000000000000000000000000000000000000000");
     const CScript nonminpush_script(nonminpush.begin(), nonminpush.end());
     BOOST_CHECK(miniscript::FromScript(nonminpush_script, wsh_converter) == nullptr);
     BOOST_CHECK(miniscript::FromScript(nonminpush_script, tap_converter) == nullptr);
     // A non-minimal VERIFY (<key> CHECKSIG VERIFY 1)
-    constexpr auto nonminverify{"2103a0434d9e47f3c86235477c7b1ae6ae5d3442d49b1943c2b752a68e2a47e247c7ac6951"_hex_u8};
+    std::vector<unsigned char> nonminverify = ParseHex("2103a0434d9e47f3c86235477c7b1ae6ae5d3442d49b1943c2b752a68e2a47e247c7ac6951");
     const CScript nonminverify_script(nonminverify.begin(), nonminverify.end());
     BOOST_CHECK(miniscript::FromScript(nonminverify_script, wsh_converter) == nullptr);
     BOOST_CHECK(miniscript::FromScript(nonminverify_script, tap_converter) == nullptr);
@@ -675,7 +670,7 @@ BOOST_AUTO_TEST_CASE(fixed_tests)
     // vector (since otherwise the execution would immediately fail). This is the MINIMALIF rule.
     // Unfortunately, this rule is consensus for Taproot but only policy for P2WSH. Therefore we can't
     // (for now) have 'd:' be 'u'. This tests we can't use a 'd:' wrapper for a thresh, which requires
-    // its subs to all be 'u' (taken from https://github.com/rust-bitcoin/rust-miniscript/discussions/341).
+    // its subs to all be 'u' (taken from https://github.com/rust-briskcoin/rust-miniscript/discussions/341).
     const auto ms_minimalif = miniscript::FromString("thresh(3,c:pk_k(03d30199d74fb5a22d47b6e054e2f378cedacffcb89904a61d75d0dbd407143e65),sc:pk_k(03fff97bd5755eeea420453a14355235d382f6472f8568a18b2f057a1460297556),sc:pk_k(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798),sdv:older(32))", wsh_converter);
     BOOST_CHECK(ms_minimalif && !ms_minimalif->IsValid());
     // A Miniscript with duplicate keys is not sane

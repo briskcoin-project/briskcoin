@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# Copyright (c) 2022 The Bitcoin Core developers
+# Copyright (c) 2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-""" Example logging Bitcoin Core mempool events using the mempool:added,
+""" Example logging Briskcoin Core mempool events using the mempool:added,
     mempool:removed, mempool:replaced, and mempool:rejected tracepoints. """
 
 import curses
@@ -114,17 +114,16 @@ int trace_replaced(struct pt_regs *ctx) {
 """
 
 
-def main(pid):
-    print(f"Hooking into bitcoind with pid {pid}")
-    bitcoind_with_usdts = USDT(pid=int(pid))
+def main(briskcoind_path):
+    briskcoind_with_usdts = USDT(path=str(briskcoind_path))
 
     # attaching the trace functions defined in the BPF program
     # to the tracepoints
-    bitcoind_with_usdts.enable_probe(probe="mempool:added", fn_name="trace_added")
-    bitcoind_with_usdts.enable_probe(probe="mempool:removed", fn_name="trace_removed")
-    bitcoind_with_usdts.enable_probe(probe="mempool:replaced", fn_name="trace_replaced")
-    bitcoind_with_usdts.enable_probe(probe="mempool:rejected", fn_name="trace_rejected")
-    bpf = BPF(text=PROGRAM, usdt_contexts=[bitcoind_with_usdts])
+    briskcoind_with_usdts.enable_probe(probe="mempool:added", fn_name="trace_added")
+    briskcoind_with_usdts.enable_probe(probe="mempool:removed", fn_name="trace_removed")
+    briskcoind_with_usdts.enable_probe(probe="mempool:replaced", fn_name="trace_replaced")
+    briskcoind_with_usdts.enable_probe(probe="mempool:rejected", fn_name="trace_rejected")
+    bpf = BPF(text=PROGRAM, usdt_contexts=[briskcoind_with_usdts])
 
     events = []
 
@@ -366,8 +365,8 @@ class Dashboard:
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("USAGE: ", sys.argv[0], "<pid of bitcoind>")
+        print("USAGE: ", sys.argv[0], "path/to/briskcoind")
         exit(1)
 
-    pid = sys.argv[1]
-    main(pid)
+    path = sys.argv[1]
+    main(path)

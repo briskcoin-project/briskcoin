@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2021 The Bitcoin Core developers
+// Copyright (c) 2013-2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,7 +11,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-BOOST_FIXTURE_TEST_SUITE(hash_tests, BasicTestingSetup)
+BOOST_AUTO_TEST_SUITE(hash_tests)
 
 BOOST_AUTO_TEST_CASE(murmurhash3)
 {
@@ -20,7 +20,7 @@ BOOST_AUTO_TEST_CASE(murmurhash3)
 
     // Test MurmurHash3 with various inputs. Of course this is retested in the
     // bloom filter tests - they would fail if MurmurHash3() had any problems -
-    // but is useful for those trying to implement Bitcoin libraries as a
+    // but is useful for those trying to implement Briskcoin libraries as a
     // source of test data for their MurmurHash3() primitive during
     // development.
     //
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(siphash)
     for (int i = 0; i < 16; ++i) {
         uint64_t k1 = ctx.rand64();
         uint64_t k2 = ctx.rand64();
-        uint256 x = m_rng.rand256();
+        uint256 x = InsecureRand256();
         uint32_t n = ctx.rand32();
         uint8_t nb[4];
         WriteLE32(nb, n);

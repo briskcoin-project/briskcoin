@@ -1,9 +1,9 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitcoin-build-config.h> // IWYU pragma: keep
+#include <config/briskcoin-config.h> // IWYU pragma: keep
 
 #include <wallet/walletdb.h>
 
@@ -624,7 +624,7 @@ static DBErrors LoadLegacyWalletRecords(CWallet* pwallet, DatabaseBatch& batch, 
         if (keyMeta.nVersion >= CKeyMetadata::VERSION_WITH_HDDATA && !keyMeta.hd_seed_id.IsNull() && keyMeta.hdKeypath.size() > 0) {
             // Get the path from the key origin or from the path string
             // Not applicable when path is "s" or "m" as those indicate a seed
-            // See https://github.com/bitcoin/bitcoin/pull/12924
+            // See https://github.com/briskcoin/briskcoin/pull/12924
             bool internal = false;
             uint32_t index = 0;
             if (keyMeta.hdKeypath != "s" && keyMeta.hdKeypath != "m") {
@@ -1247,19 +1247,19 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
 static bool RunWithinTxn(WalletBatch& batch, std::string_view process_desc, const std::function<bool(WalletBatch&)>& func)
 {
     if (!batch.TxnBegin()) {
-        LogDebug(BCLog::WALLETDB, "Error: cannot create db txn for %s\n", process_desc);
+        LogPrint(BCLog::WALLETDB, "Error: cannot create db txn for %s\n", process_desc);
         return false;
     }
 
     // Run procedure
     if (!func(batch)) {
-        LogDebug(BCLog::WALLETDB, "Error: %s failed\n", process_desc);
+        LogPrint(BCLog::WALLETDB, "Error: %s failed\n", process_desc);
         batch.TxnAbort();
         return false;
     }
 
     if (!batch.TxnCommit()) {
-        LogDebug(BCLog::WALLETDB, "Error: cannot commit db txn for %s\n", process_desc);
+        LogPrint(BCLog::WALLETDB, "Error: cannot commit db txn for %s\n", process_desc);
         return false;
     }
 
@@ -1335,8 +1335,10 @@ bool WalletBatch::WriteWalletFlags(const uint64_t flags)
 
 bool WalletBatch::EraseRecords(const std::unordered_set<std::string>& types)
 {
-    return std::all_of(types.begin(), types.end(), [&](const std::string& type) {
-        return m_batch->ErasePrefix(DataStream() << type);
+    return RunWithinTxn(*this, "erase records", [&types](WalletBatch& self) {
+        return std::all_of(types.begin(), types.end(), [&self](const std::string& type) {
+            return self.m_batch->ErasePrefix(DataStream() << type);
+        });
     });
 }
 
@@ -1347,34 +1349,12 @@ bool WalletBatch::TxnBegin()
 
 bool WalletBatch::TxnCommit()
 {
-    bool res = m_batch->TxnCommit();
-    if (res) {
-        for (const auto& listener : m_txn_listeners) {
-            listener.on_commit();
-        }
-        // txn finished, clear listeners
-        m_txn_listeners.clear();
-    }
-    return res;
+    return m_batch->TxnCommit();
 }
 
 bool WalletBatch::TxnAbort()
 {
-    bool res = m_batch->TxnAbort();
-    if (res) {
-        for (const auto& listener : m_txn_listeners) {
-            listener.on_abort();
-        }
-        // txn finished, clear listeners
-        m_txn_listeners.clear();
-    }
-    return res;
-}
-
-void WalletBatch::RegisterTxnListener(const DbTxnListener& l)
-{
-    assert(m_batch->HasActiveTxn());
-    m_txn_listeners.emplace_back(l);
+    return m_batch->TxnAbort();
 }
 
 std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error)

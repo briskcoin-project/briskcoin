@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_CONSENSUS_PARAMS_H
-#define BITCOIN_CONSENSUS_PARAMS_H
+#ifndef BRISKCOIN_CONSENSUS_PARAMS_H
+#define BRISKCOIN_CONSENSUS_PARAMS_H
 
 #include <uint256.h>
 
@@ -109,7 +109,7 @@ struct Params {
     uint256 powLimit;
     bool fPowAllowMinDifficultyBlocks;
     /**
-      * Enforce BIP94 timewarp attack mitigation. On testnet4 this also enforces
+      * Enfore BIP94 timewarp attack mitigation. On testnet4 this also enforces
       * the block storm mitigation.
       */
     bool enforce_BIP94;
@@ -127,7 +127,7 @@ struct Params {
     uint256 defaultAssumeValid;
 
     /**
-     * If true, witness commitments contain a payload equal to a Bitcoin Script solution
+     * If true, witness commitments contain a payload equal to a Briskcoin Script solution
      * to the signet challenge. See BIP325.
      */
     bool signet_blocks{false};
@@ -153,4 +153,4 @@ struct Params {
 
 } // namespace Consensus
 
-#endif // BITCOIN_CONSENSUS_PARAMS_H
+#endif // BRISKCOIN_CONSENSUS_PARAMS_H

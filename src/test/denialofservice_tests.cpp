@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2022 The Bitcoin Core developers
+// Copyright (c) 2011-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -106,18 +106,17 @@ BOOST_AUTO_TEST_CASE(outbound_slow_chain_eviction)
     peerman.FinalizeNode(dummyNode1);
 }
 
-struct OutboundTest : TestingSetup {
-void AddRandomOutboundPeer(NodeId& id, std::vector<CNode*>& vNodes, PeerManager& peerLogic, ConnmanTestMsg& connman, ConnectionType connType, bool onion_peer = false)
+static void AddRandomOutboundPeer(NodeId& id, std::vector<CNode*>& vNodes, PeerManager& peerLogic, ConnmanTestMsg& connman, ConnectionType connType, bool onion_peer = false)
 {
     CAddress addr;
 
     if (onion_peer) {
-        auto tor_addr{m_rng.randbytes(ADDR_TORV3_SIZE)};
+        auto tor_addr{g_insecure_rand_ctx.randbytes(ADDR_TORV3_SIZE)};
         BOOST_REQUIRE(addr.SetSpecial(OnionToString(tor_addr)));
     }
 
     while (!addr.IsRoutable()) {
-        addr = CAddress(ip(m_rng.randbits(32)), NODE_NONE);
+        addr = CAddress(ip(g_insecure_rand_ctx.randbits(32)), NODE_NONE);
     }
 
     vNodes.emplace_back(new CNode{id++,
@@ -137,9 +136,8 @@ void AddRandomOutboundPeer(NodeId& id, std::vector<CNode*>& vNodes, PeerManager&
 
     connman.AddTestNode(node);
 }
-}; // struct OutboundTest
 
-BOOST_FIXTURE_TEST_CASE(stale_tip_peer_management, OutboundTest)
+BOOST_AUTO_TEST_CASE(stale_tip_peer_management)
 {
     NodeId id{0};
     auto connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman, *m_node.netgroupman, Params());
@@ -237,7 +235,7 @@ BOOST_FIXTURE_TEST_CASE(stale_tip_peer_management, OutboundTest)
     connman->ClearTestNodes();
 }
 
-BOOST_FIXTURE_TEST_CASE(block_relay_only_eviction, OutboundTest)
+BOOST_AUTO_TEST_CASE(block_relay_only_eviction)
 {
     NodeId id{0};
     auto connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman, *m_node.netgroupman, Params());

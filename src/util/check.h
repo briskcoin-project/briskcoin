@@ -1,9 +1,9 @@
-// Copyright (c) 2019-2022 The Bitcoin Core developers
+// Copyright (c) 2019-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_UTIL_CHECK_H
-#define BITCOIN_UTIL_CHECK_H
+#ifndef BRISKCOIN_UTIL_CHECK_H
+#define BRISKCOIN_UTIL_CHECK_H
 
 #include <attributes.h>
 
@@ -12,14 +12,6 @@
 #include <string>
 #include <string_view>
 #include <utility>
-
-constexpr bool G_FUZZING{
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    true
-#else
-    false
-#endif
-};
 
 std::string StrFormatInternalBug(std::string_view msg, std::string_view file, int line, std::string_view func);
 
@@ -48,11 +40,11 @@ void assertion_fail(std::string_view file, int line, std::string_view func, std:
 
 /** Helper for Assert()/Assume() */
 template <bool IS_ASSERT, typename T>
-constexpr T&& inline_assertion_check(LIFETIMEBOUND T&& val, [[maybe_unused]] const char* file, [[maybe_unused]] int line, [[maybe_unused]] const char* func, [[maybe_unused]] const char* assertion)
+T&& inline_assertion_check(LIFETIMEBOUND T&& val, [[maybe_unused]] const char* file, [[maybe_unused]] int line, [[maybe_unused]] const char* func, [[maybe_unused]] const char* assertion)
 {
-    if (IS_ASSERT || std::is_constant_evaluated() || G_FUZZING
+    if constexpr (IS_ASSERT
 #ifdef ABORT_ON_FAILED_ASSUME
-        || true
+                  || true
 #endif
     ) {
         if (!val) {
@@ -105,4 +97,4 @@ constexpr T&& inline_assertion_check(LIFETIMEBOUND T&& val, [[maybe_unused]] con
 
 // NOLINTEND(bugprone-lambda-function-name)
 
-#endif // BITCOIN_UTIL_CHECK_H
+#endif // BRISKCOIN_UTIL_CHECK_H

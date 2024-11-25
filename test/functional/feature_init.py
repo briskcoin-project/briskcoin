@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
-# Copyright (c) 2021-present The Bitcoin Core developers
+# Copyright (c) 2021-present The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
-"""Tests related to node initialization."""
+"""Stress tests related to node initialization."""
 from pathlib import Path
 import platform
 import shutil
 
-from test_framework.test_framework import BitcoinTestFramework, SkipTest
-from test_framework.test_node import (
-    BITCOIN_PID_FILENAME_DEFAULT,
-    ErrorMatch,
-)
+from test_framework.test_framework import BriskcoinTestFramework, SkipTest
+from test_framework.test_node import ErrorMatch
 from test_framework.util import assert_equal
 
 
-class InitTest(BitcoinTestFramework):
+class InitStressTest(BriskcoinTestFramework):
     """
     Ensure that initialization can be interrupted at a number of points and not impair
     subsequent starts.
@@ -28,7 +25,7 @@ class InitTest(BitcoinTestFramework):
         self.setup_clean_chain = False
         self.num_nodes = 1
 
-    def init_stress_test(self):
+    def run_test(self):
         """
         - test terminating initialization after seeing a certain log line.
         - test removing certain essential files to test startup error paths.
@@ -100,13 +97,13 @@ class InitTest(BitcoinTestFramework):
 
         files_to_delete = {
             'blocks/index/*.ldb': 'Error opening block database.',
-            'chainstate/*.ldb': 'Error opening coins database.',
+            'chainstate/*.ldb': 'Error opening block database.',
             'blocks/blk*.dat': 'Error loading block database.',
         }
 
         files_to_perturb = {
             'blocks/index/*.ldb': 'Error loading block database.',
-            'chainstate/*.ldb': 'Error opening coins database.',
+            'chainstate/*.ldb': 'Error opening block database.',
             'blocks/blk*.dat': 'Corrupted block database detected.',
         }
 
@@ -150,31 +147,6 @@ class InitTest(BitcoinTestFramework):
             shutil.move(node.chain_path / "blocks_bak", node.chain_path / "blocks")
             shutil.move(node.chain_path / "chainstate_bak", node.chain_path / "chainstate")
 
-    def init_pid_test(self):
-        BITCOIN_PID_FILENAME_CUSTOM = "my_fancy_bitcoin_pid_file.foobar"
-
-        self.log.info("Test specifying custom pid file via -pid command line option")
-        custom_pidfile_relative = BITCOIN_PID_FILENAME_CUSTOM
-        self.log.info(f"-> path relative to datadir ({custom_pidfile_relative})")
-        self.restart_node(0, [f"-pid={custom_pidfile_relative}"])
-        datadir = self.nodes[0].chain_path
-        assert not (datadir / BITCOIN_PID_FILENAME_DEFAULT).exists()
-        assert (datadir / custom_pidfile_relative).exists()
-        self.stop_node(0)
-        assert not (datadir / custom_pidfile_relative).exists()
-
-        custom_pidfile_absolute = Path(self.options.tmpdir) / BITCOIN_PID_FILENAME_CUSTOM
-        self.log.info(f"-> absolute path ({custom_pidfile_absolute})")
-        self.restart_node(0, [f"-pid={custom_pidfile_absolute}"])
-        assert not (datadir / BITCOIN_PID_FILENAME_DEFAULT).exists()
-        assert custom_pidfile_absolute.exists()
-        self.stop_node(0)
-        assert not custom_pidfile_absolute.exists()
-
-    def run_test(self):
-        self.init_pid_test()
-        self.init_stress_test()
-
 
 if __name__ == '__main__':
-    InitTest(__file__).main()
+    InitStressTest(__file__).main()

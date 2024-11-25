@@ -1,24 +1,19 @@
-// Copyright (c) 2015-2022 The Bitcoin Core developers
+// Copyright (c) 2015-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
 
-#include <test/util/setup_common.h> // IWYU pragma: keep
-#include <tinyformat.h>
+#include <test/util/setup_common.h>
 #include <util/fs.h>
 #include <util/string.h>
 
 #include <chrono>
-#include <compare>
 #include <fstream>
 #include <functional>
 #include <iostream>
 #include <map>
-#include <ratio>
 #include <regex>
-#include <set>
-#include <stdexcept>
 #include <string>
 #include <vector>
 

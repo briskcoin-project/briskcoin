@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019-2022 The Bitcoin Core developers
+# Copyright (c) 2019-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test getdescriptorinfo RPC.
 """
 
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.descriptors import descsum_create
 from test_framework.util import (
     assert_equal,
@@ -13,21 +13,16 @@ from test_framework.util import (
 )
 
 
-class DescriptorTest(BitcoinTestFramework):
+class DescriptorTest(BriskcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 1
         self.extra_args = [["-disablewallet"]]
         self.wallet_names = []
 
-    def test_desc(self, desc, isrange, issolvable, hasprivatekeys, expanded_descs=None):
+    def test_desc(self, desc, isrange, issolvable, hasprivatekeys):
         info = self.nodes[0].getdescriptorinfo(desc)
         assert_equal(info, self.nodes[0].getdescriptorinfo(descsum_create(desc)))
-        if expanded_descs is not None:
-            assert_equal(info["descriptor"], descsum_create(expanded_descs[0]))
-            assert_equal(info["multipath_expansion"], [descsum_create(x) for x in expanded_descs])
-        else:
-            assert_equal(info['descriptor'], descsum_create(desc))
-            assert "multipath_expansion" not in info
+        assert_equal(info['descriptor'], descsum_create(desc))
         assert_equal(info['isrange'], isrange)
         assert_equal(info['issolvable'], issolvable)
         assert_equal(info['hasprivatekeys'], hasprivatekeys)
@@ -65,11 +60,6 @@ class DescriptorTest(BitcoinTestFramework):
         self.test_desc("pkh([d34db33f/44h/0h/0h]tpubD6NzVbkrYhZ4WaWSyoBvQwbpLkojyoTZPRsgXELWz3Popb3qkjcJyJUGLnL4qHHoQvao8ESaAstxYSnhyswJ76uZPStJRJCTKvosUCJZL5B/1/*)", isrange=True, issolvable=True, hasprivatekeys=False)
         # A set of *1-of-2* P2WSH multisig outputs where the first multisig key is the *1/0/`i`* child of the first specified xpub and the second multisig key is the *0/0/`i`* child of the second specified xpub, and `i` is any number in a configurable range (`0-1000` by default).
         self.test_desc("wsh(multi(1,tpubD6NzVbkrYhZ4WaWSyoBvQwbpLkojyoTZPRsgXELWz3Popb3qkjcJyJUGLnL4qHHoQvao8ESaAstxYSnhyswJ76uZPStJRJCTKvosUCJZL5B/1/0/*,tpubD6NzVbkrYhZ4WaWSyoBvQwbpLkojyoTZPRsgXELWz3Popb3qkjcJyJUGLnL4qHHoQvao8ESaAstxYSnhyswJ76uZPStJRJCTKvosUCJZL5B/0/0/*))", isrange=True, issolvable=True, hasprivatekeys=False)
-        # A multipath descriptor
-        self.test_desc("wpkh(tpubD6NzVbkrYhZ4WaWSyoBvQwbpLkojyoTZPRsgXELWz3Popb3qkjcJyJUGLnL4qHHoQvao8ESaAstxYSnhyswJ76uZPStJRJCTKvosUCJZL5B/<0;1>/*)", isrange=True, issolvable=True, hasprivatekeys=False,
-            expanded_descs=["wpkh(tpubD6NzVbkrYhZ4WaWSyoBvQwbpLkojyoTZPRsgXELWz3Popb3qkjcJyJUGLnL4qHHoQvao8ESaAstxYSnhyswJ76uZPStJRJCTKvosUCJZL5B/0/*)", "wpkh(tpubD6NzVbkrYhZ4WaWSyoBvQwbpLkojyoTZPRsgXELWz3Popb3qkjcJyJUGLnL4qHHoQvao8ESaAstxYSnhyswJ76uZPStJRJCTKvosUCJZL5B/1/*)"])
-        self.test_desc("wsh(multi(1,tpubD6NzVbkrYhZ4WaWSyoBvQwbpLkojyoTZPRsgXELWz3Popb3qkjcJyJUGLnL4qHHoQvao8ESaAstxYSnhyswJ76uZPStJRJCTKvosUCJZL5B/<1;2>/0/*,tpubD6NzVbkrYhZ4WaWSyoBvQwbpLkojyoTZPRsgXELWz3Popb3qkjcJyJUGLnL4qHHoQvao8ESaAstxYSnhyswJ76uZPStJRJCTKvosUCJZL5B/<2;3>/0/*))", isrange=True, issolvable=True, hasprivatekeys=False,
-            expanded_descs=["wsh(multi(1,tpubD6NzVbkrYhZ4WaWSyoBvQwbpLkojyoTZPRsgXELWz3Popb3qkjcJyJUGLnL4qHHoQvao8ESaAstxYSnhyswJ76uZPStJRJCTKvosUCJZL5B/1/0/*,tpubD6NzVbkrYhZ4WaWSyoBvQwbpLkojyoTZPRsgXELWz3Popb3qkjcJyJUGLnL4qHHoQvao8ESaAstxYSnhyswJ76uZPStJRJCTKvosUCJZL5B/2/0/*))", "wsh(multi(1,tpubD6NzVbkrYhZ4WaWSyoBvQwbpLkojyoTZPRsgXELWz3Popb3qkjcJyJUGLnL4qHHoQvao8ESaAstxYSnhyswJ76uZPStJRJCTKvosUCJZL5B/2/0/*,tpubD6NzVbkrYhZ4WaWSyoBvQwbpLkojyoTZPRsgXELWz3Popb3qkjcJyJUGLnL4qHHoQvao8ESaAstxYSnhyswJ76uZPStJRJCTKvosUCJZL5B/3/0/*))"])
 
 
 if __name__ == '__main__':

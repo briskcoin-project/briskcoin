@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_COINS_H
-#define BITCOIN_COINS_H
+#ifndef BRISKCOIN_COINS_H
+#define BRISKCOIN_COINS_H
 
 #include <compressor.h>
 #include <core_memusage.h>
@@ -303,8 +303,11 @@ private:
 class CCoinsView
 {
 public:
-    //! Retrieve the Coin (unspent transaction output) for a given outpoint.
-    virtual std::optional<Coin> GetCoin(const COutPoint& outpoint) const;
+    /** Retrieve the Coin (unspent transaction output) for a given outpoint.
+     *  Returns true only when an unspent coin was found, which is returned in coin.
+     *  When false is returned, coin's value is unspecified.
+     */
+    virtual bool GetCoin(const COutPoint &outpoint, Coin &coin) const;
 
     //! Just check whether a given outpoint is unspent.
     virtual bool HaveCoin(const COutPoint &outpoint) const;
@@ -341,7 +344,7 @@ protected:
 
 public:
     CCoinsViewBacked(CCoinsView *viewIn);
-    std::optional<Coin> GetCoin(const COutPoint& outpoint) const override;
+    bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
@@ -381,7 +384,7 @@ public:
     CCoinsViewCache(const CCoinsViewCache &) = delete;
 
     // Standard CCoinsView methods
-    std::optional<Coin> GetCoin(const COutPoint& outpoint) const override;
+    bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     void SetBestBlock(const uint256 &hashBlock);
@@ -498,7 +501,7 @@ const Coin& AccessByTxid(const CCoinsViewCache& cache, const Txid& txid);
 /**
  * This is a minimally invasive approach to shutdown on LevelDB read errors from the
  * chainstate, while keeping user interface out of the common library, which is shared
- * between bitcoind, and bitcoin-qt and non-server tools.
+ * between briskcoind, and briskcoin-qt and non-server tools.
  *
  * Writes do not need similar protection, as failure to write is handled by the caller.
 */
@@ -511,7 +514,7 @@ public:
         m_err_callbacks.emplace_back(std::move(f));
     }
 
-    std::optional<Coin> GetCoin(const COutPoint& outpoint) const override;
+    bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;
 
 private:
@@ -520,4 +523,4 @@ private:
 
 };
 
-#endif // BITCOIN_COINS_H
+#endif // BRISKCOIN_COINS_H

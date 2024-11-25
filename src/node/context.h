@@ -1,15 +1,14 @@
-// Copyright (c) 2019-2022 The Bitcoin Core developers
+// Copyright (c) 2019-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_NODE_CONTEXT_H
-#define BITCOIN_NODE_CONTEXT_H
+#ifndef BRISKCOIN_NODE_CONTEXT_H
+#define BRISKCOIN_NODE_CONTEXT_H
 
 #include <atomic>
 #include <cstdlib>
 #include <functional>
 #include <memory>
-#include <thread>
 #include <vector>
 
 class ArgsManager;
@@ -54,15 +53,13 @@ class Warnings;
 //! any member functions. It should just be a collection of references that can
 //! be used without pulling in unwanted dependencies or functionality.
 struct NodeContext {
-    //! libbitcoin_kernel context
+    //! libbriskcoin_kernel context
     std::unique_ptr<kernel::Context> kernel;
     std::unique_ptr<ECC_Context> ecc_context;
     //! Init interface for initializing current process and connecting to other processes.
     interfaces::Init* init{nullptr};
-    //! Function to request a shutdown.
-    std::function<bool()> shutdown_request;
     //! Interrupt object used to track whether node shutdown was requested.
-    util::SignalInterrupt* shutdown_signal{nullptr};
+    util::SignalInterrupt* shutdown{nullptr};
     std::unique_ptr<AddrMan> addrman;
     std::unique_ptr<CConnman> connman;
     std::unique_ptr<CTxMemPool> mempool;
@@ -89,7 +86,6 @@ struct NodeContext {
     std::atomic<int> exit_status{EXIT_SUCCESS};
     //! Manages all the node warnings
     std::unique_ptr<node::Warnings> warnings;
-    std::thread background_init_thread;
 
     //! Declare default constructor and destructor that are not inline, so code
     //! instantiating the NodeContext struct doesn't need to #include class
@@ -99,4 +95,4 @@ struct NodeContext {
 };
 } // namespace node
 
-#endif // BITCOIN_NODE_CONTEXT_H
+#endif // BRISKCOIN_NODE_CONTEXT_H

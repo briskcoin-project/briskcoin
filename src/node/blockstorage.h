@@ -1,9 +1,9 @@
-// Copyright (c) 2011-2022 The Bitcoin Core developers
+// Copyright (c) 2011-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_NODE_BLOCKSTORAGE_H
-#define BITCOIN_NODE_BLOCKSTORAGE_H
+#ifndef BRISKCOIN_NODE_BLOCKSTORAGE_H
+#define BRISKCOIN_NODE_BLOCKSTORAGE_H
 
 #include <attributes.h>
 #include <chain.h>
@@ -29,7 +29,6 @@
 #include <memory>
 #include <optional>
 #include <set>
-#include <span>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -430,7 +429,7 @@ public:
     void CleanupBlockRevFiles() const;
 };
 
-void ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_paths);
+void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFiles);
 } // namespace node
 
-#endif // BITCOIN_NODE_BLOCKSTORAGE_H
+#endif // BRISKCOIN_NODE_BLOCKSTORAGE_H

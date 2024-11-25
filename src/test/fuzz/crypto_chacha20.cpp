@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 The Bitcoin Core developers
+// Copyright (c) 2020-2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -28,10 +28,11 @@ FUZZ_TARGET(crypto_chacha20)
                 chacha20.SetKey(key);
             },
             [&] {
-                ChaCha20::Nonce96 nonce{
-                    fuzzed_data_provider.ConsumeIntegral<uint32_t>(),
-                    fuzzed_data_provider.ConsumeIntegral<uint64_t>()};
-                chacha20.Seek(nonce, fuzzed_data_provider.ConsumeIntegral<uint32_t>());
+                chacha20.Seek(
+                    {
+                        fuzzed_data_provider.ConsumeIntegral<uint32_t>(),
+                        fuzzed_data_provider.ConsumeIntegral<uint64_t>()
+                    }, fuzzed_data_provider.ConsumeIntegral<uint32_t>());
             },
             [&] {
                 std::vector<uint8_t> output(fuzzed_data_provider.ConsumeIntegralInRange<size_t>(0, 4096));

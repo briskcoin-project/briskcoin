@@ -20,7 +20,7 @@ int main(void) {
      * Here the message is "Hello, world!" and the hash function was SHA-256.
      * An actual implementation should just call SHA-256, but this example
      * hardcodes the output to avoid depending on an additional library.
-     * See https://bitcoin.stackexchange.com/questions/81115/if-someone-wanted-to-pretend-to-be-satoshi-by-posting-a-fake-signature-to-defrau/81116#81116 */
+     * See https://briskcoin.stackexchange.com/questions/81115/if-someone-wanted-to-pretend-to-be-satoshi-by-posting-a-fake-signature-to-defrau/81116#81116 */
     unsigned char msg_hash[32] = {
         0x31, 0x5F, 0x5B, 0xDB, 0x76, 0xD0, 0x78, 0xC4,
         0x3B, 0x8A, 0xC0, 0x06, 0x4E, 0x4A, 0x01, 0x64,
@@ -49,16 +49,18 @@ int main(void) {
     assert(return_val);
 
     /*** Key Generation ***/
-    if (!fill_random(seckey, sizeof(seckey))) {
-        printf("Failed to generate randomness\n");
-        return 1;
-    }
-    /* If the secret key is zero or out of range (greater than secp256k1's
-    * order), we fail. Note that the probability of this occurring is negligible
-    * with a properly functioning random number generator. */
-    if (!secp256k1_ec_seckey_verify(ctx, seckey)) {
-        printf("Generated secret key is invalid. This indicates an issue with the random number generator.\n");
-        return 1;
+
+    /* If the secret key is zero or out of range (bigger than secp256k1's
+     * order), we try to sample a new key. Note that the probability of this
+     * happening is negligible. */
+    while (1) {
+        if (!fill_random(seckey, sizeof(seckey))) {
+            printf("Failed to generate randomness\n");
+            return 1;
+        }
+        if (secp256k1_ec_seckey_verify(ctx, seckey)) {
+            break;
+        }
     }
 
     /* Public key creation using a valid context with a verified secret key should never fail */

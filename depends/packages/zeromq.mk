@@ -4,7 +4,8 @@ $(package)_download_path=https://github.com/zeromq/libzmq/releases/download/v$($
 $(package)_file_name=$(package)-$($(package)_version).tar.gz
 $(package)_sha256_hash=6653ef5910f17954861fe72332e68b03ca6e4d9c7160eb3a8de5a5a913bfab43
 $(package)_build_subdir=build
-$(package)_patches  = macos_mktemp_check.patch
+$(package)_patches = remove_libstd_link.patch
+$(package)_patches += macos_mktemp_check.patch
 $(package)_patches += builtin_sha1.patch
 $(package)_patches += fix_have_windows.patch
 $(package)_patches += openbsd_kqueue_headers.patch
@@ -22,6 +23,7 @@ define $(package)_set_vars
 endef
 
 define $(package)_preprocess_cmds
+  patch -p1 < $($(package)_patch_dir)/remove_libstd_link.patch && \
   patch -p1 < $($(package)_patch_dir)/macos_mktemp_check.patch && \
   patch -p1 < $($(package)_patch_dir)/builtin_sha1.patch && \
   patch -p1 < $($(package)_patch_dir)/cacheline_undefined.patch && \
@@ -44,6 +46,5 @@ define $(package)_stage_cmds
 endef
 
 define $(package)_postprocess_cmds
-  rm -rf share && \
-  rm -rf lib/pkgconfig
+  rm -rf share
 endef

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (c) 2018-present The Bitcoin Core developers
+# Copyright (c) 2018-present The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -15,21 +15,8 @@ if [ "$(git config --global ${CFG_DONE})" == "true" ]; then
   exit 0
 fi
 
-MAKEJOBS="-j$( nproc )"  # Use nproc, because MAKEJOBS is the default in docker image builds.
-
 if [ -n "$DPKG_ADD_ARCH" ]; then
   dpkg --add-architecture "$DPKG_ADD_ARCH"
-fi
-
-if [ -n "${APT_LLVM_V}" ]; then
-  ${CI_RETRY_EXE} apt-get update
-  ${CI_RETRY_EXE} apt-get install curl -y
-  curl "https://apt.llvm.org/llvm-snapshot.gpg.key" | tee "/etc/apt/trusted.gpg.d/apt.llvm.org.asc"
-  (
-    # shellcheck disable=SC2034
-    source /etc/os-release
-    echo "deb http://apt.llvm.org/${VERSION_CODENAME}/ llvm-toolchain-${VERSION_CODENAME}-${APT_LLVM_V} main" > "/etc/apt/sources.list.d/llvm-toolchain-${VERSION_CODENAME}-${APT_LLVM_V}.list"
-  )
 fi
 
 if [[ $CI_IMAGE_NAME_TAG == *centos* ]]; then
@@ -49,7 +36,7 @@ if [ -n "$PIP_PACKAGES" ]; then
 fi
 
 if [[ ${USE_MEMORY_SANITIZER} == "true" ]]; then
-  ${CI_RETRY_EXE} git clone --depth=1 https://github.com/llvm/llvm-project -b "llvmorg-19.1.0" /msan/llvm-project
+  ${CI_RETRY_EXE} git clone --depth=1 https://github.com/llvm/llvm-project -b "llvmorg-18.1.3" /msan/llvm-project
 
   cmake -G Ninja -B /msan/clang_build/ \
     -DLLVM_ENABLE_PROJECTS="clang" \
@@ -58,7 +45,7 @@ if [[ ${USE_MEMORY_SANITIZER} == "true" ]]; then
     -DLLVM_ENABLE_RUNTIMES="compiler-rt;libcxx;libcxxabi;libunwind" \
     -S /msan/llvm-project/llvm
 
-  ninja -C /msan/clang_build/ "$MAKEJOBS"
+  ninja -C /msan/clang_build/ "-j$( nproc )"  # Use nproc, because MAKEJOBS is the default in docker image builds
   ninja -C /msan/clang_build/ install-runtimes
 
   update-alternatives --install /usr/bin/clang++ clang++ /msan/clang_build/bin/clang++ 100
@@ -77,7 +64,7 @@ if [[ ${USE_MEMORY_SANITIZER} == "true" ]]; then
     -DLIBCXX_HARDENING_MODE=debug \
     -S /msan/llvm-project/runtimes
 
-  ninja -C /msan/cxx_build/ "$MAKEJOBS"
+  ninja -C /msan/cxx_build/ "-j$( nproc )"  # Use nproc, because MAKEJOBS is the default in docker image builds
 
   # Clear no longer needed source folder
   du -sh /msan/llvm-project
@@ -87,7 +74,7 @@ fi
 if [[ "${RUN_TIDY}" == "true" ]]; then
   ${CI_RETRY_EXE} git clone --depth=1 https://github.com/include-what-you-use/include-what-you-use -b clang_"${TIDY_LLVM_V}" /include-what-you-use
   cmake -B /iwyu-build/ -G 'Unix Makefiles' -DCMAKE_PREFIX_PATH=/usr/lib/llvm-"${TIDY_LLVM_V}" -S /include-what-you-use
-  make -C /iwyu-build/ install "$MAKEJOBS"
+  make -C /iwyu-build/ install "-j$( nproc )"  # Use nproc, because MAKEJOBS is the default in docker image builds
 fi
 
 mkdir -p "${DEPENDS_DIR}/SDKs" "${DEPENDS_DIR}/sdk-sources"

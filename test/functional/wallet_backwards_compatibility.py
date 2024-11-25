@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2022 The Bitcoin Core developers
+# Copyright (c) 2018-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Backwards compatibility functional test
@@ -18,7 +18,7 @@ import os
 import shutil
 
 from test_framework.blocktools import COINBASE_MATURITY
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.descriptors import descsum_create
 
 from test_framework.util import (
@@ -27,13 +27,13 @@ from test_framework.util import (
 )
 
 
-class BackwardsCompatibilityTest(BitcoinTestFramework):
+class BackwardsCompatibilityTest(BriskcoinTestFramework):
     def add_options(self, parser):
         self.add_wallet_options(parser)
 
     def set_test_params(self):
         self.setup_clean_chain = True
-        self.num_nodes = 11
+        self.num_nodes = 12
         # Add new version after each release:
         self.extra_args = [
             ["-addresstype=bech32", "-whitelist=noban@127.0.0.1"], # Pre-release: use to mine blocks. noban for immediate tx relay
@@ -47,6 +47,7 @@ class BackwardsCompatibilityTest(BitcoinTestFramework):
             ["-nowallet", "-walletrbf=1", "-addresstype=bech32", "-whitelist=noban@127.0.0.1"], # v0.19.1
             ["-nowallet", "-walletrbf=1", "-addresstype=bech32", "-whitelist=127.0.0.1"], # v0.18.1
             ["-nowallet", "-walletrbf=1", "-addresstype=bech32", "-whitelist=127.0.0.1"], # v0.17.2
+            ["-nowallet", "-walletrbf=1", "-addresstype=bech32", "-whitelist=127.0.0.1", "-wallet=wallet.dat"], # v0.16.3
         ]
         self.wallet_names = [self.default_wallet_name]
 
@@ -67,6 +68,7 @@ class BackwardsCompatibilityTest(BitcoinTestFramework):
             190100,
             180100,
             170200,
+            160300,
         ])
 
         self.start_nodes()
@@ -108,7 +110,7 @@ class BackwardsCompatibilityTest(BitcoinTestFramework):
         assert wallet.getaddressinfo(address_18075)["solvable"]
         node_v19.unloadwallet("w1_v19")
 
-        # Copy the 0.19 wallet to the last Bitcoin Core version and open it:
+        # Copy the 0.19 wallet to the last Briskcoin Core version and open it:
         shutil.copytree(
             os.path.join(node_v19.wallets_path, "w1_v19"),
             os.path.join(node_master.wallets_path, "w1_v19")
@@ -131,17 +133,18 @@ class BackwardsCompatibilityTest(BitcoinTestFramework):
     def run_test(self):
         node_miner = self.nodes[0]
         node_master = self.nodes[1]
-        node_v21 = self.nodes[self.num_nodes - 5]
-        node_v17 = self.nodes[self.num_nodes - 1]
+        node_v21 = self.nodes[self.num_nodes - 6]
+        node_v17 = self.nodes[self.num_nodes - 2]
+        node_v16 = self.nodes[self.num_nodes - 1]
 
         legacy_nodes = self.nodes[2:] # Nodes that support legacy wallets
-        legacy_only_nodes = self.nodes[-4:] # Nodes that only support legacy wallets
-        descriptors_nodes = self.nodes[2:-4] # Nodes that support descriptor wallets
+        legacy_only_nodes = self.nodes[-5:] # Nodes that only support legacy wallets
+        descriptors_nodes = self.nodes[2:-5] # Nodes that support descriptor wallets
 
         self.generatetoaddress(node_miner, COINBASE_MATURITY + 1, node_miner.getnewaddress())
 
         # Sanity check the test framework:
-        res = node_v17.getblockchaininfo()
+        res = node_v16.getblockchaininfo()
         assert_equal(res['blocks'], COINBASE_MATURITY + 1)
 
         self.log.info("Test wallet backwards compatibility...")
@@ -212,6 +215,9 @@ class BackwardsCompatibilityTest(BitcoinTestFramework):
         # In descriptors wallet mode, run this test on the nodes that support descriptor wallets
         # In legacy wallets mode, run this test on the nodes that support legacy wallets
         for node in descriptors_nodes if self.options.descriptors else legacy_nodes:
+            if self.major_version_less_than(node, 17):
+                # loadwallet was introduced in v0.17.0
+                continue
             self.log.info(f"- {node.version}")
             for wallet_name in ["w1", "w2", "w3"]:
                 if self.major_version_less_than(node, 18) and wallet_name == "w3":
@@ -260,7 +266,7 @@ class BackwardsCompatibilityTest(BitcoinTestFramework):
         if self.options.descriptors:
             self.log.info("Test descriptor wallet incompatibility on:")
             for node in legacy_only_nodes:
-                # RPC loadwallet failure causes bitcoind to exit in <= 0.17, in addition to the RPC
+                # RPC loadwallet failure causes briskcoind to exit in <= 0.17, in addition to the RPC
                 # call failure, so the following test won't work:
                 # assert_raises_rpc_error(-4, "Wallet loading failed.", node_v17.loadwallet, 'w3')
                 if self.major_version_less_than(node, 18):
@@ -281,8 +287,17 @@ class BackwardsCompatibilityTest(BitcoinTestFramework):
             node_v17.assert_start_raises_init_error(["-wallet=w3"], "Error: wallet.dat corrupt, salvage failed")
         else:
             self.log.info("Test blank wallet incompatibility with v17")
-            node_v17.assert_start_raises_init_error(["-wallet=w3"], "Error: Error loading w3: Wallet requires newer version of Bitcoin Core")
+            node_v17.assert_start_raises_init_error(["-wallet=w3"], "Error: Error loading w3: Wallet requires newer version of Briskcoin Core")
         self.start_node(node_v17.index)
+
+        # No wallet created in master can be opened in 0.16
+        self.log.info("Test that wallets created in master are too new for 0.16")
+        self.stop_node(node_v16.index)
+        for wallet_name in ["w1", "w2", "w3"]:
+            if self.options.descriptors:
+                node_v16.assert_start_raises_init_error([f"-wallet={wallet_name}"], f"Error: {wallet_name} corrupt, salvage failed")
+            else:
+                node_v16.assert_start_raises_init_error([f"-wallet={wallet_name}"], f"Error: Error loading {wallet_name}: Wallet requires newer version of Briskcoin Core")
 
         # When descriptors are enabled, w1 cannot be opened by 0.21 since it contains a taproot descriptor
         if self.options.descriptors:
@@ -324,7 +339,7 @@ class BackwardsCompatibilityTest(BitcoinTestFramework):
             # Restore the wallet to master
             load_res = node_master.restorewallet(wallet_name, backup_path)
 
-            # Make sure this wallet opens with only the migration warning. See https://github.com/bitcoin/bitcoin/pull/19054
+            # Make sure this wallet opens with only the migration warning. See https://github.com/briskcoin/briskcoin/pull/19054
             if not self.options.descriptors:
                 # Legacy wallets will have only a deprecation warning
                 assert_equal(load_res["warnings"], ["Wallet loaded successfully. The legacy wallet type is being deprecated and support for creating and opening legacy wallets will be removed in the future. Legacy wallets can be migrated to a descriptor wallet with migratewallet."])

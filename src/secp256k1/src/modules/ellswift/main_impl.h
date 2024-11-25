@@ -510,7 +510,6 @@ static int ellswift_xdh_hash_function_prefix(unsigned char *output, const unsign
     secp256k1_sha256_write(&sha, ell_b64, 64);
     secp256k1_sha256_write(&sha, x32, 32);
     secp256k1_sha256_finalize(&sha, output);
-    secp256k1_sha256_clear(&sha);
 
     return 1;
 }
@@ -540,7 +539,6 @@ static int ellswift_xdh_hash_function_bip324(unsigned char* output, const unsign
     secp256k1_sha256_write(&sha, ell_b64, 64);
     secp256k1_sha256_write(&sha, x32, 32);
     secp256k1_sha256_finalize(&sha, output);
-    secp256k1_sha256_clear(&sha);
 
     return 1;
 }
@@ -582,7 +580,7 @@ int secp256k1_ellswift_xdh(const secp256k1_context *ctx, unsigned char *output, 
     /* Invoke hasher */
     ret = hashfp(output, sx, ell_a64, ell_b64, data);
 
-    secp256k1_memclear(sx, sizeof(sx));
+    memset(sx, 0, 32);
     secp256k1_fe_clear(&px);
     secp256k1_scalar_clear(&s);
 

@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_CHAIN_H
-#define BITCOIN_CHAIN_H
+#ifndef BRISKCOIN_CHAIN_H
+#define BRISKCOIN_CHAIN_H
 
 #include <arith_uint256.h>
 #include <consensus/params.h>
@@ -40,7 +40,7 @@ static constexpr int64_t TIMESTAMP_WINDOW = MAX_FUTURE_BLOCK_TIME;
  * Maximum gap between node time and block time used
  * for the "Catching up..." mode in GUI.
  *
- * Ref: https://github.com/bitcoin/bitcoin/pull/1026
+ * Ref: https://github.com/briskcoin/briskcoin/pull/1026
  */
 static constexpr int64_t MAX_BLOCK_TIME_GAP = 90 * 60;
 
@@ -178,7 +178,7 @@ public:
     //! Verification status of this block. See enum BlockStatus
     //!
     //! Note: this value is modified to show BLOCK_OPT_WITNESS during UTXO snapshot
-    //! load to avoid a spurious startup failure requiring -reindex.
+    //! load to avoid the block index being spuriously rewound.
     //! @sa NeedsRedownload
     //! @sa ActivateSnapshot
     uint32_t nStatus GUARDED_BY(::cs_main){0};
@@ -483,4 +483,4 @@ CBlockLocator GetLocator(const CBlockIndex* index);
 /** Construct a list of hash entries to put in a locator.  */
 std::vector<uint256> LocatorEntries(const CBlockIndex* index);
 
-#endif // BITCOIN_CHAIN_H
+#endif // BRISKCOIN_CHAIN_H

@@ -1,9 +1,9 @@
-// Copyright (c) The Bitcoin Core developers
+// Copyright (c) The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_UTIL_FEEFRAC_H
-#define BITCOIN_UTIL_FEEFRAC_H
+#ifndef BRISKCOIN_UTIL_FEEFRAC_H
+#define BRISKCOIN_UTIL_FEEFRAC_H
 
 #include <stdint.h>
 #include <compare>
@@ -64,13 +64,13 @@ struct FeeFrac
     int32_t size;
 
     /** Construct an IsEmpty() FeeFrac. */
-    constexpr inline FeeFrac() noexcept : fee{0}, size{0} {}
+    inline FeeFrac() noexcept : fee{0}, size{0} {}
 
     /** Construct a FeeFrac with specified fee and size. */
-    constexpr inline FeeFrac(int64_t f, int32_t s) noexcept : fee{f}, size{s} {}
+    inline FeeFrac(int64_t f, int32_t s) noexcept : fee{f}, size{s} {}
 
-    constexpr inline FeeFrac(const FeeFrac&) noexcept = default;
-    constexpr inline FeeFrac& operator=(const FeeFrac&) noexcept = default;
+    inline FeeFrac(const FeeFrac&) noexcept = default;
+    inline FeeFrac& operator=(const FeeFrac&) noexcept = default;
 
     /** Check if this is empty (size and fee are 0). */
     bool inline IsEmpty() const noexcept {
@@ -156,4 +156,4 @@ struct FeeFrac
  */
 std::partial_ordering CompareChunks(Span<const FeeFrac> chunks0, Span<const FeeFrac> chunks1);
 
-#endif // BITCOIN_UTIL_FEEFRAC_H
+#endif // BRISKCOIN_UTIL_FEEFRAC_H

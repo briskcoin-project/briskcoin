@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -69,7 +69,7 @@ bool VerifyWallets(WalletContext& context)
             // Pass write=false because no need to write file and probably
             // better not to. If unnamed wallet needs to be added next startup
             // and the setting is empty, this code will just run again.
-            chain.overwriteRwSetting("wallet", std::move(wallets), interfaces::SettingsAction::SKIP_WRITE);
+            chain.overwriteRwSetting("wallet", wallets, /*write=*/false);
         }
     }
 
@@ -77,11 +77,6 @@ bool VerifyWallets(WalletContext& context)
     std::set<fs::path> wallet_paths;
 
     for (const auto& wallet : chain.getSettingsList("wallet")) {
-        if (!wallet.isStr()) {
-            chain.initError(_("Invalid value detected for '-wallet' or '-nowallet'. "
-                              "'-wallet' requires a string value, while '-nowallet' accepts only '1' to disable all wallets"));
-            return false;
-        }
         const auto& wallet_file = wallet.get_str();
         const fs::path path = fsbridge::AbsPathJoin(GetWalletDir(), fs::PathFromString(wallet_file));
 
@@ -115,11 +110,6 @@ bool LoadWallets(WalletContext& context)
     try {
         std::set<fs::path> wallet_paths;
         for (const auto& wallet : chain.getSettingsList("wallet")) {
-            if (!wallet.isStr()) {
-                chain.initError(_("Invalid value detected for '-wallet' or '-nowallet'. "
-                                  "'-wallet' requires a string value, while '-nowallet' accepts only '1' to disable all wallets"));
-                return false;
-            }
             const auto& name = wallet.get_str();
             if (!wallet_paths.insert(fs::PathFromString(name)).second) {
                 continue;

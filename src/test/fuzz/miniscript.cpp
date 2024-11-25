@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022 The Bitcoin Core developers
+// Copyright (c) 2021-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,8 +13,6 @@
 #include <test/fuzz/util.h>
 #include <util/strencodings.h>
 
-#include <algorithm>
-
 namespace {
 
 using Fragment = miniscript::Fragment;
@@ -22,7 +20,7 @@ using NodeRef = miniscript::NodeRef<CPubKey>;
 using Node = miniscript::Node<CPubKey>;
 using Type = miniscript::Type;
 using MsCtx = miniscript::MiniscriptContext;
-using miniscript::operator""_mst;
+using miniscript::operator"" _mst;
 
 //! Some pre-computed data for more efficient string roundtrips and to simulate challenges.
 struct TestData {
@@ -295,7 +293,7 @@ const struct CheckerContext: BaseSignatureChecker {
         XOnlyPubKey pk{pubkey};
         auto it = TEST_DATA.schnorr_sigs.find(pk);
         if (it == TEST_DATA.schnorr_sigs.end()) return false;
-        return std::ranges::equal(it->second.first, sig);
+        return it->second.first == sig;
     }
     bool CheckLockTime(const CScriptNum& nLockTime) const override { return nLockTime.GetInt64() & 1; }
     bool CheckSequence(const CScriptNum& nSequence) const override { return nSequence.GetInt64() & 1; }

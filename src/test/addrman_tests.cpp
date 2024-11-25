@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2022 The Bitcoin Core developers
+// Copyright (c) 2012-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -47,12 +47,11 @@ static CService ResolveService(const std::string& ip, uint16_t port = 0)
 }
 
 
-static std::vector<bool> FromBytes(std::span<const std::byte> source)
+static std::vector<bool> FromBytes(const unsigned char* source, int vector_size)
 {
-    int vector_size(source.size() * 8);
     std::vector<bool> result(vector_size);
     for (int byte_i = 0; byte_i < vector_size / 8; ++byte_i) {
-        uint8_t cur_byte{std::to_integer<uint8_t>(source[byte_i])};
+        unsigned char cur_byte = source[byte_i];
         for (int bit_i = 0; bit_i < 8; ++bit_i) {
             result[byte_i * 8 + bit_i] = (cur_byte >> bit_i) & 1;
         }
@@ -196,21 +195,21 @@ BOOST_AUTO_TEST_CASE(addrman_select)
 BOOST_AUTO_TEST_CASE(addrman_select_by_network)
 {
     auto addrman = std::make_unique<AddrMan>(EMPTY_NETGROUPMAN, DETERMINISTIC, GetCheckRatio(m_node));
-    BOOST_CHECK(!addrman->Select(/*new_only=*/true, {NET_IPV4}).first.IsValid());
-    BOOST_CHECK(!addrman->Select(/*new_only=*/false, {NET_IPV4}).first.IsValid());
+    BOOST_CHECK(!addrman->Select(/*new_only=*/true, NET_IPV4).first.IsValid());
+    BOOST_CHECK(!addrman->Select(/*new_only=*/false, NET_IPV4).first.IsValid());
 
     // add ipv4 address to the new table
     CNetAddr source = ResolveIP("252.2.2.2");
     CService addr1 = ResolveService("250.1.1.1", 8333);
     BOOST_CHECK(addrman->Add({CAddress(addr1, NODE_NONE)}, source));
 
-    BOOST_CHECK(addrman->Select(/*new_only=*/true, {NET_IPV4}).first == addr1);
-    BOOST_CHECK(addrman->Select(/*new_only=*/false, {NET_IPV4}).first == addr1);
-    BOOST_CHECK(!addrman->Select(/*new_only=*/false, {NET_IPV6}).first.IsValid());
-    BOOST_CHECK(!addrman->Select(/*new_only=*/false, {NET_ONION}).first.IsValid());
-    BOOST_CHECK(!addrman->Select(/*new_only=*/false, {NET_I2P}).first.IsValid());
-    BOOST_CHECK(!addrman->Select(/*new_only=*/false, {NET_CJDNS}).first.IsValid());
-    BOOST_CHECK(!addrman->Select(/*new_only=*/true, {NET_CJDNS}).first.IsValid());
+    BOOST_CHECK(addrman->Select(/*new_only=*/true, NET_IPV4).first == addr1);
+    BOOST_CHECK(addrman->Select(/*new_only=*/false, NET_IPV4).first == addr1);
+    BOOST_CHECK(!addrman->Select(/*new_only=*/false, NET_IPV6).first.IsValid());
+    BOOST_CHECK(!addrman->Select(/*new_only=*/false, NET_ONION).first.IsValid());
+    BOOST_CHECK(!addrman->Select(/*new_only=*/false, NET_I2P).first.IsValid());
+    BOOST_CHECK(!addrman->Select(/*new_only=*/false, NET_CJDNS).first.IsValid());
+    BOOST_CHECK(!addrman->Select(/*new_only=*/true, NET_CJDNS).first.IsValid());
     BOOST_CHECK(addrman->Select(/*new_only=*/false).first == addr1);
 
     // add I2P address to the new table
@@ -218,29 +217,25 @@ BOOST_AUTO_TEST_CASE(addrman_select_by_network)
     i2p_addr.SetSpecial("udhdrtrcetjm5sxzskjyr5ztpeszydbh4dpl3pl4utgqqw2v4jna.b32.i2p");
     BOOST_CHECK(addrman->Add({i2p_addr}, source));
 
-    BOOST_CHECK(addrman->Select(/*new_only=*/true, {NET_I2P}).first == i2p_addr);
-    BOOST_CHECK(addrman->Select(/*new_only=*/false, {NET_I2P}).first == i2p_addr);
-    BOOST_CHECK(addrman->Select(/*new_only=*/false, {NET_IPV4}).first == addr1);
-    std::unordered_set<Network> nets_with_entries = {NET_IPV4, NET_I2P};
-    BOOST_CHECK(addrman->Select(/*new_only=*/false, nets_with_entries).first.IsValid());
-    BOOST_CHECK(!addrman->Select(/*new_only=*/false, {NET_IPV6}).first.IsValid());
-    BOOST_CHECK(!addrman->Select(/*new_only=*/false, {NET_ONION}).first.IsValid());
-    BOOST_CHECK(!addrman->Select(/*new_only=*/false, {NET_CJDNS}).first.IsValid());
-    std::unordered_set<Network> nets_without_entries = {NET_IPV6, NET_ONION, NET_CJDNS};
-    BOOST_CHECK(!addrman->Select(/*new_only=*/false, nets_without_entries).first.IsValid());
+    BOOST_CHECK(addrman->Select(/*new_only=*/true, NET_I2P).first == i2p_addr);
+    BOOST_CHECK(addrman->Select(/*new_only=*/false, NET_I2P).first == i2p_addr);
+    BOOST_CHECK(addrman->Select(/*new_only=*/false, NET_IPV4).first == addr1);
+    BOOST_CHECK(!addrman->Select(/*new_only=*/false, NET_IPV6).first.IsValid());
+    BOOST_CHECK(!addrman->Select(/*new_only=*/false, NET_ONION).first.IsValid());
+    BOOST_CHECK(!addrman->Select(/*new_only=*/false, NET_CJDNS).first.IsValid());
 
     // bump I2P address to tried table
     BOOST_CHECK(addrman->Good(i2p_addr));
 
-    BOOST_CHECK(!addrman->Select(/*new_only=*/true, {NET_I2P}).first.IsValid());
-    BOOST_CHECK(addrman->Select(/*new_only=*/false, {NET_I2P}).first == i2p_addr);
+    BOOST_CHECK(!addrman->Select(/*new_only=*/true, NET_I2P).first.IsValid());
+    BOOST_CHECK(addrman->Select(/*new_only=*/false, NET_I2P).first == i2p_addr);
 
     // add another I2P address to the new table
     CAddress i2p_addr2;
     i2p_addr2.SetSpecial("c4gfnttsuwqomiygupdqqqyy5y5emnk5c73hrfvatri67prd7vyq.b32.i2p");
     BOOST_CHECK(addrman->Add({i2p_addr2}, source));
 
-    BOOST_CHECK(addrman->Select(/*new_only=*/true, {NET_I2P}).first == i2p_addr2);
+    BOOST_CHECK(addrman->Select(/*new_only=*/true, NET_I2P).first == i2p_addr2);
 
     // ensure that both new and tried table are selected from
     bool new_selected{false};
@@ -248,7 +243,7 @@ BOOST_AUTO_TEST_CASE(addrman_select_by_network)
     int counter = 256;
 
     while (--counter > 0 && (!new_selected || !tried_selected)) {
-        const CAddress selected{addrman->Select(/*new_only=*/false, {NET_I2P}).first};
+        const CAddress selected{addrman->Select(/*new_only=*/false, NET_I2P).first};
         BOOST_REQUIRE(selected == i2p_addr || selected == i2p_addr2);
         if (selected == i2p_addr) {
             tried_selected = true;
@@ -281,7 +276,7 @@ BOOST_AUTO_TEST_CASE(addrman_select_special)
     // since the only ipv4 address is on the new table, ensure that the new
     // table gets selected even if new_only is false. if the table was being
     // selected at random, this test will sporadically fail
-    BOOST_CHECK(addrman->Select(/*new_only=*/false, {NET_IPV4}).first == addr1);
+    BOOST_CHECK(addrman->Select(/*new_only=*/false, NET_IPV4).first == addr1);
 }
 
 BOOST_AUTO_TEST_CASE(addrman_new_collisions)
@@ -581,7 +576,7 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_new_bucket_legacy)
 // 101.8.0.0/16 AS8
 BOOST_AUTO_TEST_CASE(caddrinfo_get_tried_bucket)
 {
-    std::vector<bool> asmap = FromBytes(test::data::asmap);
+    std::vector<bool> asmap = FromBytes(asmap_raw, sizeof(asmap_raw) * 8);
     NetGroupManager ngm_asmap{asmap};
 
     CAddress addr1 = CAddress(ResolveService("250.1.1.1", 8333), NODE_NONE);
@@ -635,7 +630,7 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_tried_bucket)
 
 BOOST_AUTO_TEST_CASE(caddrinfo_get_new_bucket)
 {
-    std::vector<bool> asmap = FromBytes(test::data::asmap);
+    std::vector<bool> asmap = FromBytes(asmap_raw, sizeof(asmap_raw) * 8);
     NetGroupManager ngm_asmap{asmap};
 
     CAddress addr1 = CAddress(ResolveService("250.1.2.1", 8333), NODE_NONE);
@@ -713,7 +708,7 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_new_bucket)
 
 BOOST_AUTO_TEST_CASE(addrman_serialization)
 {
-    std::vector<bool> asmap1 = FromBytes(test::data::asmap);
+    std::vector<bool> asmap1 = FromBytes(asmap_raw, sizeof(asmap_raw) * 8);
     NetGroupManager netgroupman{asmap1};
 
     const auto ratio = GetCheckRatio(m_node);

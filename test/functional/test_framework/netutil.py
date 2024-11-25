@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2022 The Bitcoin Core developers
+# Copyright (c) 2014-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Linux network utilities.
@@ -167,10 +167,3 @@ def test_unix_socket():
         return False
     else:
         return True
-
-def format_addr_port(addr, port):
-    '''Return either "addr:port" or "[addr]:port" based on whether addr looks like an IPv6 address.'''
-    if ":" in addr:
-        return f"[{addr}]:{port}"
-    else:
-        return f"{addr}:{port}"

@@ -1,19 +1,14 @@
-// Copyright (c) 2019-2022 The Bitcoin Core developers
+// Copyright (c) 2019-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
 #include <key.h>
+#include <pubkey.h>
 #include <script/descriptor.h>
-#include <script/script.h>
-#include <script/signingprovider.h>
 
-#include <cassert>
-#include <cstdint>
-#include <memory>
 #include <string>
 #include <utility>
-#include <vector>
 
 static void ExpandDescriptor(benchmark::Bench& bench)
 {
@@ -23,12 +18,12 @@ static void ExpandDescriptor(benchmark::Bench& bench)
     const std::pair<int64_t, int64_t> range = {0, 1000};
     FlatSigningProvider provider;
     std::string error;
-    auto descs = Parse(desc_str, provider, error);
+    auto desc = Parse(desc_str, provider, error);
 
     bench.run([&] {
         for (int i = range.first; i <= range.second; ++i) {
             std::vector<CScript> scripts;
-            bool success = descs[0]->Expand(i, provider, scripts, provider);
+            bool success = desc->Expand(i, provider, scripts, provider);
             assert(success);
         }
     });

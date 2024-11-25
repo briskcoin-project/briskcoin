@@ -1,14 +1,9 @@
-// Copyright (c) 2018-2022 The Bitcoin Core developers
+// Copyright (c) 2018-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
 #include <blockfilter.h>
-#include <uint256.h>
-
-#include <cstdint>
-#include <utility>
-#include <vector>
 
 static GCSFilter::ElementSet GenerateGCSTestElements()
 {

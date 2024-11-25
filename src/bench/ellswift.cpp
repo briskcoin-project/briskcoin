@@ -1,16 +1,11 @@
-// Copyright (c) 2022-2023 The Bitcoin Core developers
+// Copyright (c) 2022-2023 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
-#include <key.h>
-#include <pubkey.h>
-#include <random.h>
-#include <span.h>
-#include <uint256.h>
 
-#include <algorithm>
-#include <cassert>
+#include <key.h>
+#include <random.h>
 
 static void EllSwiftCreate(benchmark::Bench& bench)
 {

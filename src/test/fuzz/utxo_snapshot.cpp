@@ -1,4 +1,4 @@
-// Copyright (c) 2021-present The Bitcoin Core developers
+// Copyright (c) 2021-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -58,7 +58,7 @@ void initialize_chain()
         auto& chainman{*setup->m_node.chainman};
         for (const auto& block : chain) {
             BlockValidationState dummy;
-            bool processed{chainman.ProcessNewBlockHeaders({{block->GetBlockHeader()}}, true, dummy)};
+            bool processed{chainman.ProcessNewBlockHeaders({*block}, true, dummy)};
             Assert(processed);
             const auto* index{WITH_LOCK(::cs_main, return chainman.m_blockman.LookupBlockIndex(block->GetHash()))};
             Assert(index);
@@ -137,7 +137,7 @@ void utxo_snapshot_fuzz(FuzzBufferType buffer)
         if constexpr (!INVALID) {
             for (const auto& block : *g_chain) {
                 BlockValidationState dummy;
-                bool processed{chainman.ProcessNewBlockHeaders({{block->GetBlockHeader()}}, true, dummy)};
+                bool processed{chainman.ProcessNewBlockHeaders({*block}, true, dummy)};
                 Assert(processed);
                 const auto* index{WITH_LOCK(::cs_main, return chainman.m_blockman.LookupBlockIndex(block->GetHash()))};
                 Assert(index);

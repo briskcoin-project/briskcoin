@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_SCRIPT_SIGN_H
-#define BITCOIN_SCRIPT_SIGN_H
+#ifndef BRISKCOIN_SCRIPT_SIGN_H
+#define BRISKCOIN_SCRIPT_SIGN_H
 
 #include <attributes.h>
 #include <coins.h>
@@ -97,6 +97,25 @@ struct SignatureData {
 /** Produce a script signature using a generic signature creator. */
 bool ProduceSignature(const SigningProvider& provider, const BaseSignatureCreator& creator, const CScript& scriptPubKey, SignatureData& sigdata);
 
+/**
+ * Produce a satisfying script (scriptSig or witness).
+ *
+ * @param provider   Utility containing the information necessary to solve a script.
+ * @param fromPubKey The script to produce a satisfaction for.
+ * @param txTo       The spending transaction.
+ * @param nIn        The index of the input in `txTo` referring the output being spent.
+ * @param amount     The value of the output being spent.
+ * @param nHashType  Signature hash type.
+ * @param sig_data   Additional data provided to solve a script. Filled with the resulting satisfying
+ *                   script and whether the satisfaction is complete.
+ *
+ * @return           True if the produced script is entirely satisfying `fromPubKey`.
+ **/
+bool SignSignature(const SigningProvider &provider, const CScript& fromPubKey, CMutableTransaction& txTo,
+                   unsigned int nIn, const CAmount& amount, int nHashType, SignatureData& sig_data);
+bool SignSignature(const SigningProvider &provider, const CTransaction& txFrom, CMutableTransaction& txTo,
+                   unsigned int nIn, int nHashType, SignatureData& sig_data);
+
 /** Extract signature data from a transaction input, and insert it. */
 SignatureData DataFromTransaction(const CMutableTransaction& tx, unsigned int nIn, const CTxOut& txout);
 void UpdateInput(CTxIn& input, const SignatureData& data);
@@ -107,4 +126,4 @@ bool IsSegWitOutput(const SigningProvider& provider, const CScript& script);
 /** Sign the CMutableTransaction */
 bool SignTransaction(CMutableTransaction& mtx, const SigningProvider* provider, const std::map<COutPoint, Coin>& coins, int sighash, std::map<int, bilingual_str>& input_errors);
 
-#endif // BITCOIN_SCRIPT_SIGN_H
+#endif // BRISKCOIN_SCRIPT_SIGN_H

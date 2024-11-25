@@ -1,4 +1,4 @@
-// Copyright (c) 2020-present The Bitcoin Core developers
+// Copyright (c) 2020-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -64,7 +64,7 @@ FUZZ_TARGET(process_messages, .init = initialize_process_messages)
 
     LIMITED_WHILE(fuzzed_data_provider.ConsumeBool(), 30)
     {
-        const std::string random_message_type{fuzzed_data_provider.ConsumeBytesAsString(CMessageHeader::MESSAGE_TYPE_SIZE).c_str()};
+        const std::string random_message_type{fuzzed_data_provider.ConsumeBytesAsString(CMessageHeader::COMMAND_SIZE).c_str()};
 
         const auto mock_time = ConsumeTime(fuzzed_data_provider);
         SetMockTime(mock_time);

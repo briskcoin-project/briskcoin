@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019-2021 The Bitcoin Core developers
+# Copyright (c) 2019-2021 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """
@@ -24,7 +24,7 @@ from test_framework.p2p import (
     P2PInterface,
     p2p_lock,
 )
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.util import (
     assert_equal,
 )
@@ -56,7 +56,7 @@ NUM_INBOUND = 10
 MAX_GETDATA_INBOUND_WAIT = GETDATA_TX_INTERVAL + INBOUND_PEER_TX_DELAY + TXID_RELAY_DELAY
 
 
-class TxDownloadTest(BitcoinTestFramework):
+class TxDownloadTest(BriskcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 2
         self.extra_args= [['-datacarriersize=100000', '-maxmempool=5', '-persistmempool=0']] * self.num_nodes
@@ -156,9 +156,9 @@ class TxDownloadTest(BitcoinTestFramework):
         # One of the peers is asked for the tx
         peer2.wait_until(lambda: sum(p.tx_getdata_count for p in [peer1, peer2]) == 1)
         with p2p_lock:
-            _peer_expiry, peer_fallback = (peer1, peer2) if peer1.tx_getdata_count == 1 else (peer2, peer1)
+            peer_expiry, peer_fallback = (peer1, peer2) if peer1.tx_getdata_count == 1 else (peer2, peer1)
             assert_equal(peer_fallback.tx_getdata_count, 0)
-        self.nodes[0].setmocktime(int(time.time()) + GETDATA_TX_INTERVAL + 1)  # Wait for request to _peer_expiry to expire
+        self.nodes[0].setmocktime(int(time.time()) + GETDATA_TX_INTERVAL + 1)  # Wait for request to peer_expiry to expire
         peer_fallback.wait_until(lambda: peer_fallback.tx_getdata_count >= 1, timeout=1)
         self.restart_node(0)  # reset mocktime
 
@@ -250,7 +250,7 @@ class TxDownloadTest(BitcoinTestFramework):
     def test_rejects_filter_reset(self):
         self.log.info('Check that rejected tx is not requested again')
         node = self.nodes[0]
-        fill_mempool(self, node, tx_sync_fun=self.no_op)
+        fill_mempool(self, node)
         self.wallet.rescan_utxos()
         mempoolminfee = node.getmempoolinfo()['mempoolminfee']
         peer = node.add_p2p_connection(TestP2PConn())
@@ -284,7 +284,7 @@ class TxDownloadTest(BitcoinTestFramework):
         self.test_large_inv_batch()
         self.test_spurious_notfound()
 
-        # Run each test against new bitcoind instances, as setting mocktimes has long-term effects on when
+        # Run each test against new briskcoind instances, as setting mocktimes has long-term effects on when
         # the next trickle relay event happens.
         for test, with_inbounds in [
             (self.test_in_flight_max, True),

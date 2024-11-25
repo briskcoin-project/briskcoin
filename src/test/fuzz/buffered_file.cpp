@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2022 The Bitcoin Core developers
+// Copyright (c) 2020-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -25,9 +25,7 @@ FUZZ_TARGET(buffered_file)
         ConsumeRandomLengthByteVector<std::byte>(fuzzed_data_provider),
     };
     try {
-        auto n_buf_size = fuzzed_data_provider.ConsumeIntegralInRange<uint64_t>(0, 4096);
-        auto n_rewind_in = fuzzed_data_provider.ConsumeIntegralInRange<uint64_t>(0, 4096);
-        opt_buffered_file.emplace(fuzzed_file, n_buf_size, n_rewind_in);
+        opt_buffered_file.emplace(fuzzed_file, fuzzed_data_provider.ConsumeIntegralInRange<uint64_t>(0, 4096), fuzzed_data_provider.ConsumeIntegralInRange<uint64_t>(0, 4096));
     } catch (const std::ios_base::failure&) {
     }
     if (opt_buffered_file && !fuzzed_file.IsNull()) {

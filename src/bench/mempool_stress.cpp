@@ -1,24 +1,17 @@
-// Copyright (c) 2011-2022 The Bitcoin Core developers
+// Copyright (c) 2011-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
-#include <consensus/amount.h>
+#include <kernel/mempool_entry.h>
 #include <policy/policy.h>
-#include <primitives/transaction.h>
 #include <random.h>
-#include <script/script.h>
-#include <sync.h>
 #include <test/util/setup_common.h>
 #include <txmempool.h>
+#include <util/chaintype.h>
 #include <validation.h>
 
-#include <cstddef>
-#include <cstdint>
-#include <memory>
 #include <vector>
-
-class CCoinsViewCache;
 
 static void AddTx(const CTransactionRef& tx, CTxMemPool& pool) EXCLUSIVE_LOCKS_REQUIRED(cs_main, pool.cs)
 {

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Bitcoin Core developers
+// Copyright (c) 2023 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -137,8 +137,9 @@ struct CacheLevel
 
 /** Class for the base of the hierarchy (roughly simulating a memory-backed CCoinsViewDB).
  *
- * The initial state consists of the empty UTXO set.
- * Coins whose output index is 4 (mod 5) have GetCoin() always succeed after being spent.
+ * The initial state consists of the empty UTXO set, though coins whose output index
+ * is 3 (mod 5) always have GetCoin() succeed (but returning an IsSpent() coin unless a UTXO
+ * exists). Coins whose output index is 4 (mod 5) have GetCoin() always succeed after being spent.
  * This exercises code paths with spent, non-DIRTY cache entries.
  */
 class CoinsViewBottom final : public CCoinsView
@@ -146,11 +147,19 @@ class CoinsViewBottom final : public CCoinsView
     std::map<COutPoint, Coin> m_data;
 
 public:
-    std::optional<Coin> GetCoin(const COutPoint& outpoint) const final
+    bool GetCoin(const COutPoint& outpoint, Coin& coin) const final
     {
-        // TODO GetCoin shouldn't return spent coins
-        if (auto it = m_data.find(outpoint); it != m_data.end()) return it->second;
-        return std::nullopt;
+        auto it = m_data.find(outpoint);
+        if (it == m_data.end()) {
+            if ((outpoint.n % 5) == 3) {
+                coin.Clear();
+                return true;
+            }
+            return false;
+        } else {
+            coin = it->second;
+            return true;
+        }
     }
 
     bool HaveCoin(const COutPoint& outpoint) const final
@@ -261,16 +270,17 @@ FUZZ_TARGET(coinscache_sim)
                 // Look up in simulation data.
                 auto sim = lookup(outpointidx);
                 // Look up in real caches.
-                auto realcoin = caches.back()->GetCoin(data.outpoints[outpointidx]);
+                Coin realcoin;
+                auto real = caches.back()->GetCoin(data.outpoints[outpointidx], realcoin);
                 // Compare results.
                 if (!sim.has_value()) {
-                    assert(!realcoin || realcoin->IsSpent());
+                    assert(!real || realcoin.IsSpent());
                 } else {
-                    assert(realcoin && !realcoin->IsSpent());
+                    assert(real && !realcoin.IsSpent());
                     const auto& simcoin = data.coins[sim->first];
-                    assert(realcoin->out == simcoin.out);
-                    assert(realcoin->fCoinBase == simcoin.fCoinBase);
-                    assert(realcoin->nHeight == sim->second);
+                    assert(realcoin.out == simcoin.out);
+                    assert(realcoin.fCoinBase == simcoin.fCoinBase);
+                    assert(realcoin.nHeight == sim->second);
                 }
             },
 
@@ -455,15 +465,16 @@ FUZZ_TARGET(coinscache_sim)
 
     // Compare the bottom coinsview (not a CCoinsViewCache) with sim_cache[0].
     for (uint32_t outpointidx = 0; outpointidx < NUM_OUTPOINTS; ++outpointidx) {
-        auto realcoin = bottom.GetCoin(data.outpoints[outpointidx]);
+        Coin realcoin;
+        bool real = bottom.GetCoin(data.outpoints[outpointidx], realcoin);
         auto sim = lookup(outpointidx, 0);
         if (!sim.has_value()) {
-            assert(!realcoin || realcoin->IsSpent());
+            assert(!real || realcoin.IsSpent());
         } else {
-            assert(realcoin && !realcoin->IsSpent());
-            assert(realcoin->out == data.coins[sim->first].out);
-            assert(realcoin->fCoinBase == data.coins[sim->first].fCoinBase);
-            assert(realcoin->nHeight == sim->second);
+            assert(real && !realcoin.IsSpent());
+            assert(realcoin.out == data.coins[sim->first].out);
+            assert(realcoin.fCoinBase == data.coins[sim->first].fCoinBase);
+            assert(realcoin.nHeight == sim->second);
         }
     }
 }

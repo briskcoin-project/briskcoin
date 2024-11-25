@@ -1,0 +1,33 @@
+# /etc/conf.d/briskcoind: config file for /etc/init.d/briskcoind
+
+# Config file location
+#BRISKCOIND_CONFIGFILE="/etc/briskcoin/briskcoin.conf"
+
+# What directory to write pidfile to?  (created and owned by $BRISKCOIND_USER)
+#BRISKCOIND_PIDDIR="/var/run/briskcoind"
+
+# What filename to give the pidfile
+#BRISKCOIND_PIDFILE="${BRISKCOIND_PIDDIR}/briskcoind.pid"
+
+# Where to write briskcoind data (be mindful that the blockchain is large)
+#BRISKCOIND_DATADIR="/var/lib/briskcoind"
+
+# User and group to own briskcoind process
+#BRISKCOIND_USER="briskcoin"
+#BRISKCOIND_GROUP="briskcoin"
+
+# Path to briskcoind executable
+#BRISKCOIND_BIN="/usr/bin/briskcoind"
+
+# Nice value to run briskcoind under
+#BRISKCOIND_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+#BRISKCOIND_OPTS=""
+
+# The timeout in seconds OpenRC will wait for briskcoind to terminate
+# after a SIGTERM has been raised.
+# Note that this will be mapped as argument to start-stop-daemon's
+# '--retry' option, which means you can specify a retry schedule
+# here. For more information see man 8 start-stop-daemon.
+BRISKCOIND_SIGTERM_TIMEOUT=600

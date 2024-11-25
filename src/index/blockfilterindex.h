@@ -1,9 +1,9 @@
-// Copyright (c) 2018-2022 The Bitcoin Core developers
+// Copyright (c) 2018-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_INDEX_BLOCKFILTERINDEX_H
-#define BITCOIN_INDEX_BLOCKFILTERINDEX_H
+#ifndef BRISKCOIN_INDEX_BLOCKFILTERINDEX_H
+#define BRISKCOIN_INDEX_BLOCKFILTERINDEX_H
 
 #include <attributes.h>
 #include <blockfilter.h>
@@ -52,13 +52,13 @@ private:
     std::optional<uint256> ReadFilterHeader(int height, const uint256& expected_block_hash);
 
 protected:
-    bool CustomInit(const std::optional<interfaces::BlockRef>& block) override;
+    bool CustomInit(const std::optional<interfaces::BlockKey>& block) override;
 
     bool CustomCommit(CDBBatch& batch) override;
 
     bool CustomAppend(const interfaces::BlockInfo& block) override;
 
-    bool CustomRewind(const interfaces::BlockRef& current_tip, const interfaces::BlockRef& new_tip) override;
+    bool CustomRewind(const interfaces::BlockKey& current_tip, const interfaces::BlockKey& new_tip) override;
 
     BaseIndex::DB& GetDB() const LIFETIMEBOUND override { return *m_db; }
 
@@ -110,4 +110,4 @@ bool DestroyBlockFilterIndex(BlockFilterType filter_type);
 /** Destroy all open block filter indexes. */
 void DestroyAllBlockFilterIndexes();
 
-#endif // BITCOIN_INDEX_BLOCKFILTERINDEX_H
+#endif // BRISKCOIN_INDEX_BLOCKFILTERINDEX_H

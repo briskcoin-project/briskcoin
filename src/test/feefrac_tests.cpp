@@ -1,4 +1,4 @@
-// Copyright (c) 2024-present The Bitcoin Core developers
+// Copyright (c) 2024-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -15,7 +15,7 @@ BOOST_AUTO_TEST_CASE(feefrac_operators)
     FeeFrac sum{1500, 400};
     FeeFrac diff{500, -200};
     FeeFrac empty{0, 0};
-    [[maybe_unused]] FeeFrac zero_fee{0, 1}; // zero-fee allowed
+    FeeFrac zero_fee{0, 1}; // zero-fee allowed
 
     BOOST_CHECK(empty == FeeFrac{}); // same as no-args
 

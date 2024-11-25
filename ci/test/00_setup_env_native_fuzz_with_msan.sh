@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (c) 2020-present The Bitcoin Core developers
+# Copyright (c) 2020-present The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,17 +17,10 @@ export PACKAGES="ninja-build"
 # BDB generates false-positives and will be removed in future
 export DEP_OPTS="DEBUG=1 NO_BDB=1 NO_QT=1 CC=clang CXX=clang++ CFLAGS='${MSAN_FLAGS}' CXXFLAGS='${MSAN_AND_LIBCXX_FLAGS}'"
 export GOAL="install"
-# Setting CMAKE_{C,CXX}_FLAGS_DEBUG flags to an empty string ensures that the flags set in MSAN_FLAGS remain unaltered.
 # _FORTIFY_SOURCE is not compatible with MSAN.
-export BITCOIN_CONFIG="\
- -DCMAKE_BUILD_TYPE=Debug \
- -DCMAKE_C_FLAGS_DEBUG='' \
- -DCMAKE_CXX_FLAGS_DEBUG='' \
- -DBUILD_FOR_FUZZING=ON \
- -DSANITIZERS=fuzzer,memory \
- -DAPPEND_CPPFLAGS='-DBOOST_MULTI_INDEX_ENABLE_SAFE_MODE -U_FORTIFY_SOURCE' \
-"
+export BRISKCOIN_CONFIG="--enable-fuzz --with-sanitizers=fuzzer,memory CPPFLAGS='-DBOOST_MULTI_INDEX_ENABLE_SAFE_MODE -U_FORTIFY_SOURCE'"
 export USE_MEMORY_SANITIZER="true"
 export RUN_UNIT_TESTS="false"
 export RUN_FUNCTIONAL_TESTS="false"
 export RUN_FUZZ_TESTS=true
+export CCACHE_MAXSIZE=250M
