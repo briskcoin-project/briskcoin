@@ -90,7 +90,7 @@ src/qt/briskcoin-qt.includes
 
 # Compilation and Qt preprocessor part
 *.qm
-Makefile
+#Makefile
 !depends/Makefile
 src/qt/briskcoin-qt
 Briskcoin-Qt.app
