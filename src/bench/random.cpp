@@ -1,13 +1,11 @@
-// Copyright (c) The Bitcoin Core developers
+// Copyright (c) The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
 #include <random.h>
 
-#include <algorithm>
 #include <cstdint>
-#include <iterator>
 #include <numeric>
 
 namespace {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020-2022 The Bitcoin Core developers
+# Copyright (c) 2020-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 '''
@@ -116,7 +116,7 @@ class TestSymbolChecks(unittest.TestCase):
                 }
         ''')
 
-        self.assertEqual(call_symbol_check(cxx, source, executable, ['-Wl,-platform_version','-Wl,macos', '-Wl,13.0', '-Wl,11.4']),
+        self.assertEqual(call_symbol_check(cxx, source, executable, ['-Wl,-platform_version','-Wl,macos', '-Wl,11.0', '-Wl,11.4']),
                 (1, f'{executable}: failed SDK'))
 
     def test_PE(self):

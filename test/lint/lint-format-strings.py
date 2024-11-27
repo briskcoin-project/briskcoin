@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2018-2022 The Bitcoin Core developers
+# Copyright (c) 2018-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
@@ -16,8 +16,28 @@ import re
 import sys
 
 FUNCTION_NAMES_AND_NUMBER_OF_LEADING_ARGUMENTS = [
+    'FatalErrorf,0',
+    'fprintf,1',
     'tfm::format,1',  # Assuming tfm::::format(std::ostream&, ...
+    'LogConnectFailure,1',
+    'LogError,0',
+    'LogWarning,0',
+    'LogInfo,0',
+    'LogDebug,1',
+    'LogTrace,1',
+    'LogPrint,1',
+    'LogPrintf,0',
+    'LogPrintfCategory,1',
+    'LogPrintLevel,2',
+    'printf,0',
+    'snprintf,2',
+    'sprintf,1',
     'strprintf,0',
+    'vfprintf,1',
+    'vprintf,1',
+    'vsnprintf,1',
+    'vsprintf,1',
+    'WalletLogPrintf,0',
 ]
 RUN_LINT_FILE = 'test/lint/run-lint-format-strings.py'
 
@@ -62,7 +82,7 @@ def main():
 
         matching_files_filtered = []
         for matching_file in matching_files:
-            if not re.search('^src/(leveldb|secp256k1|minisketch|tinyformat|test/fuzz/strprintf.cpp)', matching_file):
+            if not re.search('^src/(leveldb|secp256k1|minisketch|tinyformat|test/fuzz/strprintf.cpp)|contrib/devtools/briskcoin-tidy/example_logprintf.cpp', matching_file):
                 matching_files_filtered.append(matching_file)
         matching_files_filtered.sort()
 

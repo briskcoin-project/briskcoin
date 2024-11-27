@@ -1,8 +1,8 @@
-// Copyright (c) 2018-2022 The Bitcoin Core developers
+// Copyright (c) 2018-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitcoin-build-config.h> // IWYU pragma: keep
+#include <config/briskcoin-config.h> // IWYU pragma: keep
 
 #include <cstring>
 #include <string>
@@ -29,7 +29,7 @@ static void SetThreadName(const char* name)
     ::prctl(PR_SET_NAME, name, 0, 0, 0);
 #elif (defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__))
     pthread_set_name_np(pthread_self(), name);
-#elif defined(__APPLE__)
+#elif defined(MAC_OSX)
     pthread_setname_np(name);
 #else
     // Prevent warnings for unused parameters...

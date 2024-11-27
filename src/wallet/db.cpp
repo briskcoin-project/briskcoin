@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Bitcoin Core developers
+// Copyright (c) 2009-2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,7 +9,6 @@
 #include <util/fs.h>
 #include <wallet/db.h>
 
-#include <algorithm>
 #include <exception>
 #include <fstream>
 #include <string>
@@ -17,8 +16,8 @@
 #include <vector>
 
 namespace wallet {
-bool operator<(BytePrefix a, Span<const std::byte> b) { return std::ranges::lexicographical_compare(a.prefix, b.subspan(0, std::min(a.prefix.size(), b.size()))); }
-bool operator<(Span<const std::byte> a, BytePrefix b) { return std::ranges::lexicographical_compare(a.subspan(0, std::min(a.size(), b.prefix.size())), b.prefix); }
+bool operator<(BytePrefix a, Span<const std::byte> b) { return a.prefix < b.subspan(0, std::min(a.prefix.size(), b.size())); }
+bool operator<(Span<const std::byte> a, BytePrefix b) { return a.subspan(0, std::min(a.size(), b.prefix.size())) < b.prefix; }
 
 std::vector<std::pair<fs::path, std::string>> ListDatabases(const fs::path& wallet_dir)
 {
@@ -57,7 +56,7 @@ std::vector<std::pair<fs::path, std::string>> ListDatabases(const fs::path& wall
                         paths.emplace_back(fs::path(), "sqlite");
                     }
                 } else if (IsBDBFile(it->path())) {
-                    // Found top-level btree file not called wallet.dat. Current bitcoin
+                    // Found top-level btree file not called wallet.dat. Current briskcoin
                     // software will never create these files but will allow them to be
                     // opened in a shared database environment for backwards compatibility.
                     // Add it to the list of available wallets.

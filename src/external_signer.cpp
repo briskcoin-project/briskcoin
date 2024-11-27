@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2022 The Bitcoin Core developers
+// Copyright (c) 2018-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -80,10 +80,10 @@ bool ExternalSigner::SignTransaction(PartiallySignedTransaction& psbtx, std::str
     // Check if signer fingerprint matches any input master key fingerprint
     auto matches_signer_fingerprint = [&](const PSBTInput& input) {
         for (const auto& entry : input.hd_keypaths) {
-            if (std::ranges::equal(parsed_m_fingerprint, entry.second.fingerprint)) return true;
+            if (parsed_m_fingerprint == MakeUCharSpan(entry.second.fingerprint)) return true;
         }
         for (const auto& entry : input.m_tap_bip32_paths) {
-            if (std::ranges::equal(parsed_m_fingerprint, entry.second.second.fingerprint)) return true;
+            if (parsed_m_fingerprint == MakeUCharSpan(entry.second.second.fingerprint)) return true;
         }
         return false;
     };

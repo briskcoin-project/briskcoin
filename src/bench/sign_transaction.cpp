@@ -1,9 +1,9 @@
-// Copyright (c) 2023 The Bitcoin Core developers
+// Copyright (c) 2023 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <addresstype.h>
 #include <bench/bench.h>
+#include <addresstype.h>
 #include <coins.h>
 #include <key.h>
 #include <primitives/transaction.h>
@@ -11,15 +11,9 @@
 #include <script/interpreter.h>
 #include <script/script.h>
 #include <script/sign.h>
-#include <script/signingprovider.h>
-#include <span.h>
-#include <test/util/random.h>
 #include <uint256.h>
+#include <test/util/random.h>
 #include <util/translation.h>
-
-#include <cassert>
-#include <map>
-#include <vector>
 
 enum class InputType {
     P2WPKH, // segwitv0, witness-pubkey-hash (ECDSA signature)
@@ -75,13 +69,12 @@ static void SignTransactionSchnorr(benchmark::Bench& bench) { SignTransactionSin
 
 static void SignSchnorrTapTweakBenchmark(benchmark::Bench& bench, bool use_null_merkle_root)
 {
-    FastRandomContext rng;
     ECC_Context ecc_context{};
 
     auto key = GenerateRandomKey();
-    auto msg = rng.rand256();
-    auto merkle_root = use_null_merkle_root ? uint256() : rng.rand256();
-    auto aux = rng.rand256();
+    auto msg = InsecureRand256();
+    auto merkle_root = use_null_merkle_root ? uint256() : InsecureRand256();
+    auto aux = InsecureRand256();
     std::vector<unsigned char> sig(64);
 
     bench.minEpochIterations(100).run([&] {

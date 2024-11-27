@@ -1,29 +1,25 @@
-// Copyright (c) 2019-present The Bitcoin Core developers
+// Copyright (c) 2019-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_SCRIPT_MINISCRIPT_H
-#define BITCOIN_SCRIPT_MINISCRIPT_H
+#ifndef BRISKCOIN_SCRIPT_MINISCRIPT_H
+#define BRISKCOIN_SCRIPT_MINISCRIPT_H
 
 #include <algorithm>
-#include <compare>
-#include <cstdint>
-#include <cstdlib>
-#include <iterator>
+#include <functional>
+#include <numeric>
 #include <memory>
 #include <optional>
-#include <set>
-#include <stdexcept>
-#include <tuple>
-#include <utility>
+#include <string>
 #include <vector>
 
-#include <consensus/consensus.h>
+#include <assert.h>
+#include <cstdlib>
+
 #include <policy/policy.h>
-#include <script/interpreter.h>
+#include <primitives/transaction.h>
 #include <script/parsing.h>
 #include <script/script.h>
-#include <serialize.h>
 #include <span.h>
 #include <util/check.h>
 #include <util/strencodings.h>
@@ -154,8 +150,7 @@ public:
 };
 
 //! Literal operator to construct Type objects.
-inline consteval Type operator""_mst(const char* c, size_t l)
-{
+inline consteval Type operator"" _mst(const char* c, size_t l) {
     Type typ{Type::Make(0)};
 
     for (const char *p = c; p < c + l; p++) {
@@ -2223,7 +2218,7 @@ enum class DecodeContext {
     ENDIF_ELSE,
 };
 
-//! Parse a miniscript from a bitcoin script
+//! Parse a miniscript from a briskcoin script
 template<typename Key, typename Ctx, typename I>
 inline NodeRef<Key> DecodeScript(I& in, I last, const Ctx& ctx)
 {
@@ -2634,4 +2629,4 @@ inline NodeRef<typename Ctx::Key> FromScript(const CScript& script, const Ctx& c
 
 } // namespace miniscript
 
-#endif // BITCOIN_SCRIPT_MINISCRIPT_H
+#endif // BRISKCOIN_SCRIPT_MINISCRIPT_H

@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,7 +9,6 @@
 #include <consensus/validation.h>
 #include <kernel/chain.h>
 #include <kernel/mempool_entry.h>
-#include <kernel/mempool_removal_reason.h>
 #include <logging.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
@@ -19,6 +18,8 @@
 #include <future>
 #include <unordered_map>
 #include <utility>
+
+std::string RemovalReasonToString(const MemPoolRemovalReason& r) noexcept;
 
 /**
  * ValidationSignalsImpl manages a list of shared_ptr<CValidationInterface> callbacks.
@@ -166,7 +167,7 @@ void ValidationSignals::SyncWithValidationInterfaceQueue()
     } while (0)
 
 #define LOG_EVENT(fmt, ...) \
-    LogDebug(BCLog::VALIDATION, fmt "\n", __VA_ARGS__)
+    LogPrint(BCLog::VALIDATION, fmt "\n", __VA_ARGS__)
 
 void ValidationSignals::UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload) {
     // Dependencies exist that require UpdatedBlockTip events to be delivered in the order in which

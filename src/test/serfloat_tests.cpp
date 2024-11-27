@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2021 The Bitcoin Core developers
+// Copyright (c) 2014-2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(double_serfloat_tests) {
         // These specific bits are the sign bit, and the 2 top and bottom bits of
         // exponent and mantissa in the IEEE754 binary64 format.
         for (int x = 0; x < 512; ++x) {
-            uint64_t v = m_rng.randbits(64);
+            uint64_t v = InsecureRandBits(64);
             int x_pos = 0;
             for (int v_pos : {0, 1, 50, 51, 52, 53, 61, 62, 63}) {
                 v &= ~(uint64_t{1} << v_pos);

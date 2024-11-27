@@ -1,9 +1,9 @@
-// Copyright (c) 2023 The Bitcoin Core developers
+// Copyright (c) 2023 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_COMMON_ARGS_H
-#define BITCOIN_COMMON_ARGS_H
+#ifndef BRISKCOIN_COMMON_ARGS_H
+#define BRISKCOIN_COMMON_ARGS_H
 
 #include <common/settings.h>
 #include <compat/compat.h>
@@ -23,8 +23,8 @@
 
 class ArgsManager;
 
-extern const char * const BITCOIN_CONF_FILENAME;
-extern const char * const BITCOIN_SETTINGS_FILENAME;
+extern const char * const BRISKCOIN_CONF_FILENAME;
+extern const char * const BRISKCOIN_SETTINGS_FILENAME;
 
 // Return true if -datadir option points to a valid directory or is not specified.
 bool CheckDataDirOption(const ArgsManager& args);
@@ -63,8 +63,6 @@ enum class OptionsCategory {
     GUI,
     COMMANDS,
     REGISTER_COMMANDS,
-    CLI_COMMANDS,
-    IPC,
 
     HIDDEN // Always the last option to avoid printing these in the help
 };
@@ -366,13 +364,6 @@ protected:
     }
 
     /**
-     * Check CLI command args
-     *
-     * @throws std::runtime_error when multiple CLI_COMMAND arguments are specified
-     */
-    void CheckMultipleCLIArgs() const;
-
-    /**
      * Get the help string
      */
     std::string GetHelpMessage() const;
@@ -495,4 +486,4 @@ private:
 #endif
 } // namespace common
 
-#endif // BITCOIN_COMMON_ARGS_H
+#endif // BRISKCOIN_COMMON_ARGS_H

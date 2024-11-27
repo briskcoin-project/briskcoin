@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2022 The Bitcoin Core developers
+# Copyright (c) 2015-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test multisig RPCs"""
@@ -13,7 +13,7 @@ from test_framework.descriptors import descsum_create, drop_origins
 from test_framework.key import ECPubKey
 from test_framework.messages import COIN
 from test_framework.script_util import keys_to_multisig_script
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.util import (
     assert_raises_rpc_error,
     assert_equal,
@@ -24,7 +24,7 @@ from test_framework.wallet import (
     getnewdestination,
 )
 
-class RpcCreateMultiSigTest(BitcoinTestFramework):
+class RpcCreateMultiSigTest(BriskcoinTestFramework):
     def add_options(self, parser):
         self.add_wallet_options(parser)
 
@@ -47,7 +47,7 @@ class RpcCreateMultiSigTest(BitcoinTestFramework):
         return node.get_wallet_rpc(wallet_name)
 
     def run_test(self):
-        node0, node1, _node2 = self.nodes
+        node0, node1, node2 = self.nodes
         self.wallet = MiniWallet(test_node=node0)
 
         if self.is_wallet_compiled():
@@ -122,7 +122,7 @@ class RpcCreateMultiSigTest(BitcoinTestFramework):
             assert_raises_rpc_error(-4, "Unsupported multisig script size for legacy wallet. Upgrade to descriptors to overcome this limitation for p2sh-segwit or bech32 scripts", wallet_multi.addmultisigaddress, 16, pubkeys, '', 'bech32')
 
     def do_multisig(self, nkeys, nsigs, output_type, wallet_multi):
-        node0, _node1, node2 = self.nodes
+        node0, node1, node2 = self.nodes
         pub_keys = self.pub[0: nkeys]
         priv_keys = self.priv[0: nkeys]
 

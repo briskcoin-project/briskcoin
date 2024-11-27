@@ -1,25 +1,14 @@
-// Copyright (c) 2022 The Bitcoin Core developers
+// Copyright (c) 2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
-#include <bench/data/block413567.raw.h>
+#include <bench/data.h>
 #include <chainparams.h>
-#include <flatfile.h>
-#include <node/blockstorage.h>
-#include <span.h>
-#include <streams.h>
+#include <clientversion.h>
 #include <test/util/setup_common.h>
-#include <uint256.h>
-#include <util/fs.h>
+#include <util/chaintype.h>
 #include <validation.h>
-
-#include <cstdint>
-#include <cstdio>
-#include <map>
-#include <memory>
-#include <stdexcept>
-#include <vector>
 
 /**
  * The LoadExternalBlockFile() function is used during -reindex and -loadblock.

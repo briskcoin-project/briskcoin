@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2022 The Bitcoin Core developers
+// Copyright (c) 2015-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -210,20 +210,15 @@ FUZZ_TARGET(prevector)
     LIMITED_WHILE(prov.remaining_bytes(), 3000)
     {
         switch (prov.ConsumeIntegralInRange<int>(0, 13 + 3 * (test.size() > 0))) {
-        case 0: {
-            auto position = prov.ConsumeIntegralInRange<size_t>(0, test.size());
-            auto value = prov.ConsumeIntegral<int>();
-            test.insert(position, value);
-        } break;
+        case 0:
+            test.insert(prov.ConsumeIntegralInRange<size_t>(0, test.size()), prov.ConsumeIntegral<int>());
+            break;
         case 1:
             test.resize(std::max(0, std::min(30, (int)test.size() + prov.ConsumeIntegralInRange<int>(0, 4) - 2)));
             break;
-        case 2: {
-            auto position = prov.ConsumeIntegralInRange<size_t>(0, test.size());
-            auto count = 1 + prov.ConsumeBool();
-            auto value = prov.ConsumeIntegral<int>();
-            test.insert(position, count, value);
-        } break;
+        case 2:
+            test.insert(prov.ConsumeIntegralInRange<size_t>(0, test.size()), 1 + prov.ConsumeBool(), prov.ConsumeIntegral<int>());
+            break;
         case 3: {
             int del = prov.ConsumeIntegralInRange<int>(0, test.size());
             int beg = prov.ConsumeIntegralInRange<int>(0, test.size() - del);
@@ -260,11 +255,9 @@ FUZZ_TARGET(prevector)
         case 9:
             test.clear();
             break;
-        case 10: {
-            auto n = prov.ConsumeIntegralInRange<size_t>(0, 32767);
-            auto value = prov.ConsumeIntegral<int>();
-            test.assign(n, value);
-        } break;
+        case 10:
+            test.assign(prov.ConsumeIntegralInRange<size_t>(0, 32767), prov.ConsumeIntegral<int>());
+            break;
         case 11:
             test.swap();
             break;
@@ -274,11 +267,9 @@ FUZZ_TARGET(prevector)
         case 13:
             test.move();
             break;
-        case 14: {
-            auto pos = prov.ConsumeIntegralInRange<size_t>(0, test.size() - 1);
-            auto value = prov.ConsumeIntegral<int>();
-            test.update(pos, value);
-        } break;
+        case 14:
+            test.update(prov.ConsumeIntegralInRange<size_t>(0, test.size() - 1), prov.ConsumeIntegral<int>());
+            break;
         case 15:
             test.erase(prov.ConsumeIntegralInRange<size_t>(0, test.size() - 1));
             break;

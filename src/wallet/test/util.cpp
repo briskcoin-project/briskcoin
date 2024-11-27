@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022 The Bitcoin Core developers
+// Copyright (c) 2021-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -31,9 +31,8 @@ std::unique_ptr<CWallet> CreateSyncedWallet(interfaces::Chain& chain, CChain& cc
 
         FlatSigningProvider provider;
         std::string error;
-        auto descs = Parse("combo(" + EncodeSecret(key) + ")", provider, error, /* require_checksum=*/ false);
-        assert(descs.size() == 1);
-        auto& desc = descs.at(0);
+        std::unique_ptr<Descriptor> desc = Parse("combo(" + EncodeSecret(key) + ")", provider, error, /* require_checksum=*/ false);
+        assert(desc);
         WalletDescriptor w_desc(std::move(desc), 0, 0, 1, 1);
         if (!wallet->AddWalletDescriptor(w_desc, provider, "", false)) assert(false);
     }

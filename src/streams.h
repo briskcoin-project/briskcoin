@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_STREAMS_H
-#define BITCOIN_STREAMS_H
+#ifndef BRISKCOIN_STREAMS_H
+#define BRISKCOIN_STREAMS_H
 
 #include <serialize.h>
 #include <span.h>
@@ -277,9 +277,6 @@ public:
     {
         util::Xor(MakeWritableByteSpan(*this), MakeByteSpan(key));
     }
-
-    /** Compute total memory usage of this object (own memory + any dynamic memory). */
-    size_t GetMemoryUsage() const noexcept;
 };
 
 template <typename IStream>
@@ -433,17 +430,8 @@ public:
     /** Implementation detail, only used internally. */
     std::size_t detail_fread(Span<std::byte> dst);
 
-    /** Wrapper around fseek(). Will throw if seeking is not possible. */
     void seek(int64_t offset, int origin);
-
-    /** Find position within the file. Will throw if unknown. */
     int64_t tell();
-
-    /** Wrapper around FileCommit(). */
-    bool Commit();
-
-    /** Wrapper around TruncateFile(). */
-    bool Truncate(unsigned size);
 
     //
     // Stream subset
@@ -465,6 +453,10 @@ public:
         ::Unserialize(*this, obj);
         return *this;
     }
+
+    bool Commit();
+    bool IsError();
+    bool Truncate(unsigned size);
 };
 
 /** Wrapper around an AutoFile& that implements a ring buffer to
@@ -614,4 +606,4 @@ public:
     }
 };
 
-#endif // BITCOIN_STREAMS_H
+#endif // BRISKCOIN_STREAMS_H

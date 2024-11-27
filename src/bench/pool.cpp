@@ -1,15 +1,11 @@
-// Copyright (c) 2022 The Bitcoin Core developers
+// Copyright (c) 2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
 #include <support/allocators/pool.h>
 
-#include <cstddef>
-#include <cstdint>
-#include <functional>
 #include <unordered_map>
-#include <utility>
 
 template <typename Map>
 void BenchFillClearMap(benchmark::Bench& bench, Map& map)

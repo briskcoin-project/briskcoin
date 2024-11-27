@@ -10,17 +10,17 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 
 # Source code files
-[*.{h,cpp,rs,py,sh}]
+[*.{h,cpp,py,sh}]
 indent_size = 4
 
-# .cirrus.yml, etc.
+# .cirrus.yml, .fuzzbuzz.yml, etc.
 [*.yml]
 indent_size = 2
 
-# Makefiles (only relevant for depends build)
-[Makefile]
+# Makefiles
+[{*.am,Makefile.*.include}]
 indent_style = tab
 
-# CMake files
-[{CMakeLists.txt,*.cmake,*.cmake.in}]
+# Autoconf scripts
+[configure.ac]
 indent_size = 2

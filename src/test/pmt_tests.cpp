@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2022 The Bitcoin Core developers
+// Copyright (c) 2012-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,16 +17,12 @@
 class CPartialMerkleTreeTester : public CPartialMerkleTree
 {
 public:
-    CPartialMerkleTreeTester(FastRandomContext& rng) : m_rng{rng} {}
-
     // flip one bit in one of the hashes - this should break the authentication
     void Damage() {
-        unsigned int n = m_rng.randrange(vHash.size());
-        int bit = m_rng.randbits(8);
+        unsigned int n = InsecureRandRange(vHash.size());
+        int bit = InsecureRandBits(8);
         *(vHash[n].begin() + (bit>>3)) ^= 1<<(bit&7);
     }
-
-    FastRandomContext& m_rng;
 };
 
 BOOST_FIXTURE_TEST_SUITE(pmt_tests, BasicTestingSetup)
@@ -63,7 +59,7 @@ BOOST_AUTO_TEST_CASE(pmt_test1)
             std::vector<bool> vMatch(nTx, false);
             std::vector<uint256> vMatchTxid1;
             for (unsigned int j=0; j<nTx; j++) {
-                bool fInclude = m_rng.randbits(att / 2) == 0;
+                bool fInclude = InsecureRandBits(att / 2) == 0;
                 vMatch[j] = fInclude;
                 if (fInclude)
                     vMatchTxid1.push_back(vTxid[j]);
@@ -81,7 +77,7 @@ BOOST_AUTO_TEST_CASE(pmt_test1)
             BOOST_CHECK(ss.size() <= 10 + (258*n+7)/8);
 
             // deserialize into a tester copy
-            CPartialMerkleTreeTester pmt2{m_rng};
+            CPartialMerkleTreeTester pmt2;
             ss >> pmt2;
 
             // extract merkle root and matched txids from copy

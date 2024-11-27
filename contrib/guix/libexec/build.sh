@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2019-2022 The Bitcoin Core developers
+# Copyright (c) 2019-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 export LC_ALL=C
@@ -206,12 +206,13 @@ mkdir -p "$OUTDIR"
 ###########################
 
 # CONFIGFLAGS
-CONFIGFLAGS="-DREDUCE_EXPORTS=ON -DBUILD_BENCH=OFF -DBUILD_GUI_TESTS=OFF -DBUILD_FUZZ_BINARY=OFF"
+CONFIGFLAGS="--enable-reduce-exports --disable-bench --disable-gui-tests --disable-fuzz-binary"
 
 # CFLAGS
 HOST_CFLAGS="-O2 -g"
 HOST_CFLAGS+=$(find /gnu/store -maxdepth 1 -mindepth 1 -type d -exec echo -n " -ffile-prefix-map={}=/usr" \;)
 case "$HOST" in
+    *linux*)  HOST_CFLAGS+=" -ffile-prefix-map=${PWD}=." ;;
     *mingw*)  HOST_CFLAGS+=" -fno-ident" ;;
     *darwin*) unset HOST_CFLAGS ;;
 esac
@@ -229,6 +230,8 @@ case "$HOST" in
     *mingw*)  HOST_LDFLAGS="-Wl,--no-insert-timestamp" ;;
 esac
 
+# Make $HOST-specific native binaries from depends available in $PATH
+export PATH="${BASEPREFIX}/${HOST}/native/bin:${PATH}"
 mkdir -p "$DISTSRC"
 (
     cd "$DISTSRC"
@@ -236,61 +239,63 @@ mkdir -p "$DISTSRC"
     # Extract the source tarball
     tar --strip-components=1 -xf "${GIT_ARCHIVE}"
 
+    ./autogen.sh
+
     # Configure this DISTSRC for $HOST
     # shellcheck disable=SC2086
-    env CFLAGS="${HOST_CFLAGS}" CXXFLAGS="${HOST_CXXFLAGS}" LDFLAGS="${HOST_LDFLAGS}" \
-    cmake -S . -B build \
-          --toolchain "${BASEPREFIX}/${HOST}/toolchain.cmake" \
-          -DWITH_CCACHE=OFF \
-          ${CONFIGFLAGS}
+    env CONFIG_SITE="${BASEPREFIX}/${HOST}/share/config.site" \
+        ./configure --prefix=/ \
+                    --disable-ccache \
+                    --disable-maintainer-mode \
+                    --disable-dependency-tracking \
+                    ${CONFIGFLAGS} \
+                    ${HOST_CFLAGS:+CFLAGS="${HOST_CFLAGS}"} \
+                    ${HOST_CXXFLAGS:+CXXFLAGS="${HOST_CXXFLAGS}"} \
+                    ${HOST_LDFLAGS:+LDFLAGS="${HOST_LDFLAGS}"}
 
-    # Build Bitcoin Core
-    cmake --build build -j "$JOBS" ${V:+--verbose}
+    sed -i.old 's/-lstdc++ //g' config.status libtool
+
+    # Build Briskcoin Core
+    make --jobs="$JOBS" ${V:+V=1}
 
     # Check that symbol/security checks tools are sane.
-    cmake --build build --target test-security-check ${V:+--verbose}
+    make test-security-check ${V:+V=1}
     # Perform basic security checks on a series of executables.
-    cmake --build build -j 1 --target check-security ${V:+--verbose}
+    make -C src --jobs=1 check-security ${V:+V=1}
     # Check that executables only contain allowed version symbols.
-    cmake --build build -j 1 --target check-symbols ${V:+--verbose}
+    make -C src --jobs=1 check-symbols  ${V:+V=1}
 
     mkdir -p "$OUTDIR"
 
     # Make the os-specific installers
     case "$HOST" in
         *mingw*)
-            cmake --build build -j "$JOBS" -t deploy ${V:+--verbose}
-            mv build/bitcoin-win64-setup.exe "${OUTDIR}/${DISTNAME}-win64-setup-unsigned.exe"
+            make deploy ${V:+V=1} BRISKCOIN_WIN_INSTALLER="${OUTDIR}/${DISTNAME}-win64-setup-unsigned.exe"
             ;;
     esac
 
-    # Setup the directory where our Bitcoin Core build for HOST will be
+    # Setup the directory where our Briskcoin Core build for HOST will be
     # installed. This directory will also later serve as the input for our
     # binary tarballs.
     INSTALLPATH="${PWD}/installed/${DISTNAME}"
     mkdir -p "${INSTALLPATH}"
-    # Install built Bitcoin Core to $INSTALLPATH
+    # Install built Briskcoin Core to $INSTALLPATH
     case "$HOST" in
         *darwin*)
-            # This workaround can be dropped for CMake >= 3.27.
-            # See the upstream commit 689616785f76acd844fd448c51c5b2a0711aafa2.
-            find build -name 'cmake_install.cmake' -exec sed -i 's| -u -r | |g' {} +
-
-            cmake --install build --strip --prefix "${INSTALLPATH}" ${V:+--verbose}
+            make install-strip DESTDIR="${INSTALLPATH}" ${V:+V=1}
             ;;
         *)
-            cmake --install build --prefix "${INSTALLPATH}" ${V:+--verbose}
+            make install DESTDIR="${INSTALLPATH}" ${V:+V=1}
             ;;
     esac
 
     case "$HOST" in
         *darwin*)
-            cmake --build build --target deploy ${V:+--verbose}
-            mv build/dist/Bitcoin-Core.zip "${OUTDIR}/${DISTNAME}-${HOST}-unsigned.zip"
+            make deploydir ${V:+V=1}
             mkdir -p "unsigned-app-${HOST}"
             cp  --target-directory="unsigned-app-${HOST}" \
                 contrib/macdeploy/detached-sig-create.sh
-            mv --target-directory="unsigned-app-${HOST}" build/dist
+            mv --target-directory="unsigned-app-${HOST}" dist
             (
                 cd "unsigned-app-${HOST}"
                 find . -print0 \
@@ -299,10 +304,15 @@ mkdir -p "$DISTSRC"
                     | gzip -9n > "${OUTDIR}/${DISTNAME}-${HOST}-unsigned.tar.gz" \
                     || ( rm -f "${OUTDIR}/${DISTNAME}-${HOST}-unsigned.tar.gz" && exit 1 )
             )
+            make deploy ${V:+V=1} OSX_ZIP="${OUTDIR}/${DISTNAME}-${HOST}-unsigned.zip"
             ;;
     esac
     (
         cd installed
+
+        # Prune libtool and object archives
+        find . -name "lib*.la" -delete
+        find . -name "lib*.a" -delete
 
         case "$HOST" in
             *darwin*) ;;
@@ -310,7 +320,7 @@ mkdir -p "$DISTSRC"
                 # Split binaries from their debug symbols
                 {
                     find "${DISTNAME}/bin" -type f -executable -print0
-                } | xargs -0 -P"$JOBS" -I{} "${DISTSRC}/build/split-debug.sh" {} {} {}.dbg
+                } | xargs -0 -P"$JOBS" -I{} "${DISTSRC}/contrib/devtools/split-debug.sh" {} {} {}.dbg
                 ;;
         esac
 
@@ -323,9 +333,9 @@ mkdir -p "$DISTSRC"
                 ;;
         esac
 
-        # copy over the example bitcoin.conf file. if contrib/devtools/gen-bitcoin-conf.sh
+        # copy over the example briskcoin.conf file. if contrib/devtools/gen-briskcoin-conf.sh
         # has not been run before buildling, this file will be a stub
-        cp "${DISTSRC}/share/examples/bitcoin.conf" "${DISTNAME}/"
+        cp "${DISTSRC}/share/examples/briskcoin.conf" "${DISTNAME}/"
 
         cp -r "${DISTSRC}/share/rpcauth" "${DISTNAME}/share/"
 

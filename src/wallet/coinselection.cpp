@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 The Bitcoin Core developers
+// Copyright (c) 2017-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -740,7 +740,7 @@ util::Result<SelectionResult> KnapsackSolver(std::vector<OutputGroup>& groups, c
                     log_message += strprintf("%s ", FormatMoney(applicable_groups[i].m_value));
                 }
             }
-            LogDebug(BCLog::SELECTCOINS, "%stotal %s\n", log_message, FormatMoney(nBest));
+            LogPrint(BCLog::SELECTCOINS, "%stotal %s\n", log_message, FormatMoney(nBest));
         }
     }
     Assume(result.GetWeight() <= max_selection_weight);

@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022 The Bitcoin Core developers
+// Copyright (c) 2016-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,13 +11,10 @@
 #include <crypto/sha3.h>
 #include <crypto/sha512.h>
 #include <crypto/siphash.h>
+#include <hash.h>
 #include <random.h>
-#include <span.h>
 #include <tinyformat.h>
 #include <uint256.h>
-
-#include <cstdint>
-#include <vector>
 
 /* Number of bytes to hash per iteration */
 static const uint64_t BUFFER_SIZE = 1000*1000;

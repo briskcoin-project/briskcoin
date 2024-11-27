@@ -38,6 +38,8 @@ The following rules are enforced for all packages:
 
 * Only limited package replacements are currently considered. (#28984)
 
+   - If `-mempoolfullrbf=0` (the value is 1 by default), all direct conflicts must signal replacement.
+
    - Packages are 1-parent-1-child, with no in-mempool ancestors of the package.
 
    - All conflicting clusters (connected components of mempool transactions) must be clusters of up to size 2.
@@ -50,7 +52,7 @@ The following rules are enforced for all packages:
 
    - Parent feerate must be lower than package feerate.
 
-   - Must improve [feerate diagram](https://delvingbitcoin.org/t/mempool-incentive-compatibility/553). (#29242)
+   - Must improve [feerate diagram](https://delvingbriskcoin.org/t/mempool-incentive-compatibility/553). (#29242)
 
    - *Rationale*: Basic support for package RBF can be used by wallets
      by making chains of no longer than two, then directly conflicting

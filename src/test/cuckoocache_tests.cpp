@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 The Bitcoin Core developers
+// Copyright (c) 2012-2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -29,11 +29,11 @@
  *  using BOOST_CHECK_CLOSE to fail.
  *
  */
-BOOST_FIXTURE_TEST_SUITE(cuckoocache_tests, BasicTestingSetup);
+BOOST_AUTO_TEST_SUITE(cuckoocache_tests);
 
 /* Test that no values not inserted into the cache are read out of it.
  *
- * There are no repeats in the first 200000 m_rng.rand256() calls
+ * There are no repeats in the first 200000 InsecureRand256() calls
  */
 BOOST_AUTO_TEST_CASE(test_cuckoocache_no_fakes)
 {
@@ -42,19 +42,18 @@ BOOST_AUTO_TEST_CASE(test_cuckoocache_no_fakes)
     size_t megabytes = 4;
     cc.setup_bytes(megabytes << 20);
     for (int x = 0; x < 100000; ++x) {
-        cc.insert(m_rng.rand256());
+        cc.insert(InsecureRand256());
     }
     for (int x = 0; x < 100000; ++x) {
-        BOOST_CHECK(!cc.contains(m_rng.rand256(), false));
+        BOOST_CHECK(!cc.contains(InsecureRand256(), false));
     }
 };
 
-struct HitRateTest : BasicTestingSetup {
 /** This helper returns the hit rate when megabytes*load worth of entries are
  * inserted into a megabytes sized cache
  */
 template <typename Cache>
-double test_cache(size_t megabytes, double load)
+static double test_cache(size_t megabytes, double load)
 {
     SeedRandomForTest(SeedRand::ZEROS);
     std::vector<uint256> hashes;
@@ -66,7 +65,7 @@ double test_cache(size_t megabytes, double load)
     for (uint32_t i = 0; i < n_insert; ++i) {
         uint32_t* ptr = (uint32_t*)hashes[i].begin();
         for (uint8_t j = 0; j < 8; ++j)
-            *(ptr++) = m_rng.rand32();
+            *(ptr++) = InsecureRand32();
     }
     /** We make a copy of the hashes because future optimizations of the
      * cuckoocache may overwrite the inserted element, so the test is
@@ -105,10 +104,9 @@ static double normalize_hit_rate(double hits, double load)
 {
     return hits * std::max(load, 1.0);
 }
-}; // struct HitRateTest
 
 /** Check the hit rate on loads ranging from 0.1 to 1.6 */
-BOOST_FIXTURE_TEST_CASE(cuckoocache_hit_rate_ok, HitRateTest)
+BOOST_AUTO_TEST_CASE(cuckoocache_hit_rate_ok)
 {
     /** Arbitrarily selected Hit Rate threshold that happens to work for this test
      * as a lower bound on performance.
@@ -122,11 +120,10 @@ BOOST_FIXTURE_TEST_CASE(cuckoocache_hit_rate_ok, HitRateTest)
 }
 
 
-struct EraseTest : BasicTestingSetup {
 /** This helper checks that erased elements are preferentially inserted onto and
  * that the hit rate of "fresher" keys is reasonable*/
 template <typename Cache>
-void test_cache_erase(size_t megabytes)
+static void test_cache_erase(size_t megabytes)
 {
     double load = 1;
     SeedRandomForTest(SeedRand::ZEROS);
@@ -139,7 +136,7 @@ void test_cache_erase(size_t megabytes)
     for (uint32_t i = 0; i < n_insert; ++i) {
         uint32_t* ptr = (uint32_t*)hashes[i].begin();
         for (uint8_t j = 0; j < 8; ++j)
-            *(ptr++) = m_rng.rand32();
+            *(ptr++) = InsecureRand32();
     }
     /** We make a copy of the hashes because future optimizations of the
      * cuckoocache may overwrite the inserted element, so the test is
@@ -181,17 +178,15 @@ void test_cache_erase(size_t megabytes)
     // erased elements.
     BOOST_CHECK(hit_rate_stale > 2 * hit_rate_erased_but_contained);
 }
-}; // struct EraseTest
 
-BOOST_FIXTURE_TEST_CASE(cuckoocache_erase_ok, EraseTest)
+BOOST_AUTO_TEST_CASE(cuckoocache_erase_ok)
 {
     size_t megabytes = 4;
     test_cache_erase<CuckooCache::cache<uint256, SignatureCacheHasher>>(megabytes);
 }
 
-struct EraseParallelTest : BasicTestingSetup {
 template <typename Cache>
-void test_cache_erase_parallel(size_t megabytes)
+static void test_cache_erase_parallel(size_t megabytes)
 {
     double load = 1;
     SeedRandomForTest(SeedRand::ZEROS);
@@ -204,7 +199,7 @@ void test_cache_erase_parallel(size_t megabytes)
     for (uint32_t i = 0; i < n_insert; ++i) {
         uint32_t* ptr = (uint32_t*)hashes[i].begin();
         for (uint8_t j = 0; j < 8; ++j)
-            *(ptr++) = m_rng.rand32();
+            *(ptr++) = InsecureRand32();
     }
     /** We make a copy of the hashes because future optimizations of the
      * cuckoocache may overwrite the inserted element, so the test is
@@ -273,17 +268,15 @@ void test_cache_erase_parallel(size_t megabytes)
     // erased elements.
     BOOST_CHECK(hit_rate_stale > 2 * hit_rate_erased_but_contained);
 }
-}; // struct EraseParallelTest
-BOOST_FIXTURE_TEST_CASE(cuckoocache_erase_parallel_ok, EraseParallelTest)
+BOOST_AUTO_TEST_CASE(cuckoocache_erase_parallel_ok)
 {
     size_t megabytes = 4;
     test_cache_erase_parallel<CuckooCache::cache<uint256, SignatureCacheHasher>>(megabytes);
 }
 
 
-struct GenerationsTest : BasicTestingSetup {
 template <typename Cache>
-void test_cache_generations()
+static void test_cache_generations()
 {
     // This test checks that for a simulation of network activity, the fresh hit
     // rate is never below 99%, and the number of times that it is worse than
@@ -309,7 +302,7 @@ void test_cache_generations()
     // immediately and never uses the other half.
     struct block_activity {
         std::vector<uint256> reads;
-        block_activity(uint32_t n_insert, FastRandomContext& rng, Cache& c)
+        block_activity(uint32_t n_insert, Cache& c) : reads()
         {
             std::vector<uint256> inserts;
             inserts.resize(n_insert);
@@ -317,7 +310,7 @@ void test_cache_generations()
             for (uint32_t i = 0; i < n_insert; ++i) {
                 uint32_t* ptr = (uint32_t*)inserts[i].begin();
                 for (uint8_t j = 0; j < 8; ++j)
-                    *(ptr++) = rng.rand32();
+                    *(ptr++) = InsecureRand32();
             }
             for (uint32_t i = 0; i < n_insert / 4; ++i)
                 reads.push_back(inserts[i]);
@@ -351,7 +344,7 @@ void test_cache_generations()
     for (uint32_t i = 0; i < total; ++i) {
         if (last_few.size() == WINDOW_SIZE)
             last_few.pop_front();
-        last_few.emplace_back(BLOCK_SIZE, m_rng, set);
+        last_few.emplace_back(BLOCK_SIZE, set);
         uint32_t count = 0;
         for (auto& act : last_few)
             for (uint32_t k = 0; k < POP_AMOUNT; ++k) {
@@ -372,8 +365,7 @@ void test_cache_generations()
     // max_rate_less_than_tight_hit_rate of the time
     BOOST_CHECK(double(out_of_tight_tolerance) / double(total) < max_rate_less_than_tight_hit_rate);
 }
-}; // struct GenerationsTest
-BOOST_FIXTURE_TEST_CASE(cuckoocache_generations, GenerationsTest)
+BOOST_AUTO_TEST_CASE(cuckoocache_generations)
 {
     test_cache_generations<CuckooCache::cache<uint256, SignatureCacheHasher>>();
 }

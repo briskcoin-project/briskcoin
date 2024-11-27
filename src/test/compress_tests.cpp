@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 The Bitcoin Core developers
+// Copyright (c) 2012-2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -18,10 +18,10 @@
 #define NUM_MULTIPLES_CENT 10000
 
 // amounts 1 .. 10000
-#define NUM_MULTIPLES_1BTC 10000
+#define NUM_MULTIPLES_1BKC 10000
 
 // amounts 50 .. 21000000
-#define NUM_MULTIPLES_50BTC 420000
+#define NUM_MULTIPLES_50BKC 420000
 
 BOOST_FIXTURE_TEST_SUITE(compress_tests, BasicTestingSetup)
 
@@ -53,10 +53,10 @@ BOOST_AUTO_TEST_CASE(compress_amounts)
     for (uint64_t i = 1; i <= NUM_MULTIPLES_CENT; i++)
         BOOST_CHECK(TestEncode(i * CENT));
 
-    for (uint64_t i = 1; i <= NUM_MULTIPLES_1BTC; i++)
+    for (uint64_t i = 1; i <= NUM_MULTIPLES_1BKC; i++)
         BOOST_CHECK(TestEncode(i * COIN));
 
-    for (uint64_t i = 1; i <= NUM_MULTIPLES_50BTC; i++)
+    for (uint64_t i = 1; i <= NUM_MULTIPLES_50BKC; i++)
         BOOST_CHECK(TestEncode(i * 50 * COIN));
 
     for (uint64_t i = 0; i < 100000; i++)
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(compress_p2pk_scripts_not_on_curve)
 {
     XOnlyPubKey x_not_on_curve;
     do {
-        x_not_on_curve = XOnlyPubKey(m_rng.randbytes(32));
+        x_not_on_curve = XOnlyPubKey(g_insecure_rand_ctx.randbytes(32));
     } while (x_not_on_curve.IsFullyValid());
 
     // Check that P2PK script with uncompressed pubkey [=> OP_PUSH65 <0x04 .....> OP_CHECKSIG]

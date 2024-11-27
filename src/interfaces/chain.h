@@ -1,9 +1,9 @@
-// Copyright (c) 2018-2022 The Bitcoin Core developers
+// Copyright (c) 2018-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_INTERFACES_CHAIN_H
-#define BITCOIN_INTERFACES_CHAIN_H
+#ifndef BRISKCOIN_INTERFACES_CHAIN_H
+#define BRISKCOIN_INTERFACES_CHAIN_H
 
 #include <blockfilter.h>
 #include <common/settings.h>
@@ -40,6 +40,12 @@ namespace interfaces {
 
 class Handler;
 class Wallet;
+
+//! Hash/height pair to help track and identify blocks.
+struct BlockKey {
+    uint256 hash;
+    int height = -1;
+};
 
 //! Helper for findBlock to selectively return pieces of block data. If block is
 //! found, data will be returned by setting specified output variables. If block
@@ -106,13 +112,13 @@ using SettingsUpdate = std::function<std::optional<interfaces::SettingsAction>(c
 //! estimate fees, and submit transactions.
 //!
 //! TODO: Current chain methods are too low level, exposing too much of the
-//! internal workings of the bitcoin node, and not being very convenient to use.
+//! internal workings of the briskcoin node, and not being very convenient to use.
 //! Chain methods should be cleaned up and simplified over time. Examples:
 //!
 //! * The initMessages() and showProgress() methods which the wallet uses to send
 //!   notifications to the GUI should go away when GUI and wallet can directly
 //!   communicate with each other without going through the node
-//!   (https://github.com/bitcoin/bitcoin/pull/15288#discussion_r253321096).
+//!   (https://github.com/briskcoin/briskcoin/pull/15288#discussion_r253321096).
 //!
 //! * The handleRpc, registerRpcs, rpcEnableDeprecated methods and other RPC
 //!   methods can go away if wallets listen for HTTP requests on their own
@@ -124,7 +130,7 @@ using SettingsUpdate = std::function<std::optional<interfaces::SettingsAction>(c
 //!
 //! * `guessVerificationProgress` and similar methods can go away if rescan
 //!   logic moves out of the wallet, and the wallet just requests scans from the
-//!   node (https://github.com/bitcoin/bitcoin/issues/11756)
+//!   node (https://github.com/briskcoin/briskcoin/issues/11756)
 class Chain
 {
 public:
@@ -350,22 +356,15 @@ public:
     virtual common::SettingsValue getRwSetting(const std::string& name) = 0;
 
     //! Updates a setting in <datadir>/settings.json.
-    //! Null can be passed to erase the setting. There is intentionally no
-    //! support for writing null values to settings.json.
     //! Depending on the action returned by the update function, this will either
     //! update the setting in memory or write the updated settings to disk.
     virtual bool updateRwSetting(const std::string& name, const SettingsUpdate& update_function) = 0;
 
     //! Replace a setting in <datadir>/settings.json with a new value.
-    //! Null can be passed to erase the setting.
-    //! This method provides a simpler alternative to updateRwSetting when
-    //! atomically reading and updating the setting is not required.
-    virtual bool overwriteRwSetting(const std::string& name, common::SettingsValue value, SettingsAction action = SettingsAction::WRITE) = 0;
+    virtual bool overwriteRwSetting(const std::string& name, common::SettingsValue& value, bool write = true) = 0;
 
     //! Delete a given setting in <datadir>/settings.json.
-    //! This method provides a simpler alternative to overwriteRwSetting when
-    //! erasing a setting, for ease of use and readability.
-    virtual bool deleteRwSettings(const std::string& name, SettingsAction action = SettingsAction::WRITE) = 0;
+    virtual bool deleteRwSettings(const std::string& name, bool write = true) = 0;
 
     //! Synchronously send transactionAddedToMempool notifications about all
     //! current mempool transactions to the specified handler and return after
@@ -422,4 +421,4 @@ std::unique_ptr<Chain> MakeChain(node::NodeContext& node);
 
 } // namespace interfaces
 
-#endif // BITCOIN_INTERFACES_CHAIN_H
+#endif // BRISKCOIN_INTERFACES_CHAIN_H

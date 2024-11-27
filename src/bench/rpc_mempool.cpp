@@ -1,21 +1,16 @@
-// Copyright (c) 2011-2022 The Bitcoin Core developers
+// Copyright (c) 2011-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
-#include <consensus/amount.h>
 #include <kernel/cs_main.h>
-#include <primitives/transaction.h>
+#include <kernel/mempool_entry.h>
 #include <rpc/mempool.h>
-#include <script/script.h>
-#include <sync.h>
 #include <test/util/setup_common.h>
 #include <txmempool.h>
-#include <univalue.h>
-#include <util/check.h>
+#include <util/chaintype.h>
 
-#include <memory>
-#include <vector>
+#include <univalue.h>
 
 
 static void AddTx(const CTransactionRef& tx, const CAmount& fee, CTxMemPool& pool) EXCLUSIVE_LOCKS_REQUIRED(cs_main, pool.cs)

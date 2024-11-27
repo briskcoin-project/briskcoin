@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# Copyright (c) 2022 The Bitcoin Core developers
+# Copyright (c) 2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 """  Tests the coin_selection:* tracepoint API interface.
-     See https://github.com/bitcoin/bitcoin/blob/master/doc/tracing.md#context-coin_selection
+     See https://github.com/briskcoin/briskcoin/blob/master/doc/tracing.md#context-coin_selection
 """
 
 # Test will be skipped if we don't have bcc installed
@@ -12,7 +12,7 @@ try:
     from bcc import BPF, USDT # type: ignore[import]
 except ImportError:
     pass
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.util import (
     assert_equal,
     assert_greater_than,
@@ -96,7 +96,7 @@ int trace_aps_create_tx(struct pt_regs *ctx) {
 """
 
 
-class CoinSelectionTracepointTest(BitcoinTestFramework):
+class CoinSelectionTracepointTest(BriskcoinTestFramework):
     def add_options(self, parser):
         self.add_wallet_options(parser)
 
@@ -106,7 +106,7 @@ class CoinSelectionTracepointTest(BitcoinTestFramework):
 
     def skip_test_if_missing_module(self):
         self.skip_if_platform_not_linux()
-        self.skip_if_no_bitcoind_tracepoints()
+        self.skip_if_no_briskcoind_tracepoints()
         self.skip_if_no_python_bcc()
         self.skip_if_no_bpf_permissions()
         self.skip_if_no_wallet()
@@ -181,7 +181,7 @@ class CoinSelectionTracepointTest(BitcoinTestFramework):
         # 5. aps_create_tx_internal (type 4)
         wallet.sendtoaddress(wallet.getnewaddress(), 10)
         events = self.get_tracepoints([1, 2, 3, 1, 4])
-        success, use_aps, _algo, _waste, change_pos = self.determine_selection_from_usdt(events)
+        success, use_aps, algo, waste, change_pos = self.determine_selection_from_usdt(events)
         assert_equal(success, True)
         assert_greater_than(change_pos, -1)
 
@@ -190,7 +190,7 @@ class CoinSelectionTracepointTest(BitcoinTestFramework):
         # 1. normal_create_tx_internal (type 2)
         assert_raises_rpc_error(-6, "Insufficient funds", wallet.sendtoaddress, wallet.getnewaddress(), 102 * 50)
         events = self.get_tracepoints([2])
-        success, use_aps, _algo, _waste, change_pos = self.determine_selection_from_usdt(events)
+        success, use_aps, algo, waste, change_pos = self.determine_selection_from_usdt(events)
         assert_equal(success, False)
 
         self.log.info("Explicitly enabling APS results in 2 tracepoints")
@@ -200,7 +200,7 @@ class CoinSelectionTracepointTest(BitcoinTestFramework):
         wallet.setwalletflag("avoid_reuse")
         wallet.sendtoaddress(address=wallet.getnewaddress(), amount=10, avoid_reuse=True)
         events = self.get_tracepoints([1, 2])
-        success, use_aps, _algo, _waste, change_pos = self.determine_selection_from_usdt(events)
+        success, use_aps, algo, waste, change_pos = self.determine_selection_from_usdt(events)
         assert_equal(success, True)
         assert_equal(use_aps, None)
 
@@ -213,7 +213,7 @@ class CoinSelectionTracepointTest(BitcoinTestFramework):
         # 5. aps_create_tx_internal (type 4)
         wallet.sendtoaddress(address=wallet.getnewaddress(), amount=wallet.getbalance(), subtractfeefromamount=True, avoid_reuse=False)
         events = self.get_tracepoints([1, 2, 3, 1, 4])
-        success, use_aps, _algo, _waste, change_pos = self.determine_selection_from_usdt(events)
+        success, use_aps, algo, waste, change_pos = self.determine_selection_from_usdt(events)
         assert_equal(success, True)
         assert_equal(change_pos, -1)
 
@@ -223,7 +223,7 @@ class CoinSelectionTracepointTest(BitcoinTestFramework):
         # 2. normal_create_tx_internal (type 2)
         wallet.sendtoaddress(address=wallet.getnewaddress(), amount=wallet.getbalance(), subtractfeefromamount=True)
         events = self.get_tracepoints([1, 2])
-        success, use_aps, _algo, _waste, change_pos = self.determine_selection_from_usdt(events)
+        success, use_aps, algo, waste, change_pos = self.determine_selection_from_usdt(events)
         assert_equal(success, True)
         assert_equal(change_pos, -1)
 

@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_RANDOM_H
-#define BITCOIN_RANDOM_H
+#ifndef BRISKCOIN_RANDOM_H
+#define BRISKCOIN_RANDOM_H
 
 #include <crypto/chacha20.h>
 #include <crypto/common.h>
@@ -49,7 +49,7 @@
  *
  * - RandAddPeriodic() seeds everything that fast seeding includes, but additionally:
  *   - A high-precision timestamp
- *   - Dynamic environment data (clocks, resource usage, ...)
+ *   - Dynamic environment data (performance monitoring, ...)
  *   - Strengthen the entropy for 10 ms using repeated SHA512.
  *   This is run once every minute.
  *
@@ -465,4 +465,4 @@ inline uint256 GetRandHash() noexcept
  */
 bool Random_SanityCheck();
 
-#endif // BITCOIN_RANDOM_H
+#endif // BRISKCOIN_RANDOM_H

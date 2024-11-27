@@ -1,43 +1,18 @@
-// Copyright (c) 2022 The Bitcoin Core developers
+// Copyright (c) 2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php.
 
-#include <addresstype.h>
 #include <bench/bench.h>
-#include <chain.h>
 #include <chainparams.h>
-#include <consensus/amount.h>
-#include <consensus/consensus.h>
-#include <consensus/merkle.h>
-#include <interfaces/chain.h>
-#include <kernel/chain.h>
-#include <node/blockstorage.h>
-#include <outputtype.h>
-#include <policy/feerate.h>
-#include <primitives/block.h>
-#include <primitives/transaction.h>
-#include <script/script.h>
-#include <sync.h>
-#include <test/util/setup_common.h>
-#include <uint256.h>
-#include <util/result.h>
-#include <util/time.h>
-#include <validation.h>
-#include <versionbits.h>
 #include <wallet/coincontrol.h>
-#include <wallet/coinselection.h>
+#include <consensus/merkle.h>
+#include <kernel/chain.h>
+#include <node/context.h>
+#include <test/util/setup_common.h>
+#include <validation.h>
 #include <wallet/spend.h>
 #include <wallet/test/util.h>
 #include <wallet/wallet.h>
-#include <wallet/walletutil.h>
-
-#include <cassert>
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <optional>
-#include <utility>
-#include <vector>
 
 using wallet::CWallet;
 using wallet::CreateMockableWalletDatabase;
@@ -136,7 +111,7 @@ static void WalletCreateTx(benchmark::Bench& bench, const OutputType output_type
 
     CAmount target = 0;
     if (preset_inputs) {
-        // Select inputs, each has 49 BTC
+        // Select inputs, each has 49 BKC
         wallet::CoinFilterParams filter_coins;
         filter_coins.max_count = preset_inputs->num_of_internal_inputs;
         const auto& res = WITH_LOCK(wallet.cs_wallet,

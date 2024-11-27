@@ -1,10 +1,10 @@
 // Copyright (c) 2012 Pieter Wuille
-// Copyright (c) 2012-2022 The Bitcoin Core developers
+// Copyright (c) 2012-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_ADDRMAN_H
-#define BITCOIN_ADDRMAN_H
+#ifndef BRISKCOIN_ADDRMAN_H
+#define BRISKCOIN_ADDRMAN_H
 
 #include <netaddress.h>
 #include <netgroup.h>
@@ -15,7 +15,6 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -155,12 +154,12 @@ public:
      *                     an address from the new table or an empty pair. Passing `false` will return an
      *                     empty pair or an address from either the new or tried table (it does not
      *                     guarantee a tried entry).
-     * @param[in] networks Select only addresses of these networks (empty = all). Passing networks may
+     * @param[in] network  Select only addresses of this network (nullopt = all). Passing a network may
      *                     slow down the search.
      * @return    CAddress The record for the selected peer.
      *            seconds  The last time we attempted to connect to that peer.
      */
-    std::pair<CAddress, NodeSeconds> Select(bool new_only = false, const std::unordered_set<Network>& networks = {}) const;
+    std::pair<CAddress, NodeSeconds> Select(bool new_only = false, std::optional<Network> network = std::nullopt) const;
 
     /**
      * Return all or many randomly selected addresses, optionally by network.
@@ -211,4 +210,4 @@ public:
     std::optional<AddressPosition> FindAddressEntry(const CAddress& addr);
 };
 
-#endif // BITCOIN_ADDRMAN_H
+#endif // BRISKCOIN_ADDRMAN_H

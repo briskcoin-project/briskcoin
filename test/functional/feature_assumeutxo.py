@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# Copyright (c) 2021-present The Bitcoin Core developers
+# Copyright (c) 2021-present The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test for assumeutxo, a means of quickly bootstrapping a node using
 a serialized version of the UTXO set at a certain height, which corresponds
-to a hash that has been compiled into bitcoind.
+to a hash that has been compiled into briskcoind.
 
 The assumeutxo value generated and used here is committed to in
 `CRegTestParams::m_assumeutxo_data` in `src/kernel/chainparams.cpp`.
@@ -26,12 +26,11 @@ from test_framework.messages import (
 from test_framework.p2p import (
     P2PInterface,
 )
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.util import (
     assert_approx,
     assert_equal,
     assert_raises_rpc_error,
-    sha256sum_file,
     try_rpc,
 )
 from test_framework.wallet import (
@@ -45,7 +44,7 @@ FINAL_HEIGHT = 399
 COMPLETE_IDX = {'synced': True, 'best_block_height': FINAL_HEIGHT}
 
 
-class AssumeutxoTest(BitcoinTestFramework):
+class AssumeutxoTest(BriskcoinTestFramework):
 
     def set_test_params(self):
         """Use the pregenerated, deterministic chain up to height 199."""
@@ -174,7 +173,7 @@ class AssumeutxoTest(BitcoinTestFramework):
         self.start_node(0)
 
     def test_invalid_mempool_state(self, dump_output_path):
-        self.log.info("Test bitcoind should fail when mempool not empty.")
+        self.log.info("Test briskcoind should fail when mempool not empty.")
         node=self.nodes[2]
         tx = MiniWallet(node).send_self_transfer(from_node=node)
 
@@ -187,13 +186,13 @@ class AssumeutxoTest(BitcoinTestFramework):
         self.restart_node(2, extra_args=self.extra_args[2])
 
     def test_invalid_file_path(self):
-        self.log.info("Test bitcoind should fail when file path is invalid.")
+        self.log.info("Test briskcoind should fail when file path is invalid.")
         node = self.nodes[0]
         path = node.datadir_path / node.chain / "invalid" / "path"
         assert_raises_rpc_error(-8, "Couldn't open file {} for reading.".format(path), node.loadtxoutset, path)
 
     def test_snapshot_with_less_work(self, dump_output_path):
-        self.log.info("Test bitcoind should fail when snapshot has less accumulated work than this node.")
+        self.log.info("Test briskcoind should fail when snapshot has less accumulated work than this node.")
         node = self.nodes[0]
         msg = "Unable to load UTXO snapshot: Population failed: Work does not exceed active chainstate."
         assert_raises_rpc_error(-32603, msg, node.loadtxoutset, dump_output_path)
@@ -313,7 +312,7 @@ class AssumeutxoTest(BitcoinTestFramework):
         self.connect_nodes(snapshot_node.index, miner.index)
         self.sync_blocks(nodes=(miner, snapshot_node))
         # Check the base snapshot block was stored and ensure node signals full-node service support
-        self.wait_until(lambda: not try_rpc(-1, "Block not available (not fully downloaded)", snapshot_node.getblock, snapshot_block_hash))
+        self.wait_until(lambda: not try_rpc(-1, "Block not found", snapshot_node.getblock, snapshot_block_hash))
         self.wait_until(lambda: 'NETWORK' in snapshot_node.getnetworkinfo()['localservicesnames'])
 
         # Now that the snapshot_node is synced, verify the ibd_node can sync from it
@@ -374,7 +373,7 @@ class AssumeutxoTest(BitcoinTestFramework):
         assert_equal(n1.getblockcount(), START_HEIGHT)
 
         self.log.info(f"Creating a UTXO snapshot at height {SNAPSHOT_BASE_HEIGHT}")
-        dump_output = n0.dumptxoutset('utxos.dat', "latest")
+        dump_output = n0.dumptxoutset('utxos.dat')
 
         self.log.info("Test loading snapshot when the node tip is on the same block as the snapshot")
         assert_equal(n0.getblockcount(), SNAPSHOT_BASE_HEIGHT)
@@ -399,15 +398,11 @@ class AssumeutxoTest(BitcoinTestFramework):
         for n in self.nodes:
             assert_equal(n.getblockchaininfo()["headers"], SNAPSHOT_BASE_HEIGHT)
 
+        assert_equal(
+            dump_output['txoutset_hash'],
+            "a4bf3407ccb2cc0145c49ebba8fa91199f8a3903daf0883875941497d2493c27")
+        assert_equal(dump_output["nchaintx"], blocks[SNAPSHOT_BASE_HEIGHT].chain_tx)
         assert_equal(n0.getblockchaininfo()["blocks"], SNAPSHOT_BASE_HEIGHT)
-
-        def check_dump_output(output):
-            assert_equal(
-                output['txoutset_hash'],
-                "a4bf3407ccb2cc0145c49ebba8fa91199f8a3903daf0883875941497d2493c27")
-            assert_equal(output["nchaintx"], blocks[SNAPSHOT_BASE_HEIGHT].chain_tx)
-
-        check_dump_output(dump_output)
 
         # Mine more blocks on top of the snapshot that n1 hasn't yet seen. This
         # will allow us to test n1's sync-to-tip on top of a snapshot.
@@ -416,39 +411,6 @@ class AssumeutxoTest(BitcoinTestFramework):
         assert_equal(n0.getblockcount(), FINAL_HEIGHT)
         assert_equal(n1.getblockcount(), START_HEIGHT)
 
-        assert_equal(n0.getblockchaininfo()["blocks"], FINAL_HEIGHT)
-
-        self.log.info(f"Check that dumptxoutset works for past block heights")
-        # rollback defaults to the snapshot base height
-        dump_output2 = n0.dumptxoutset('utxos2.dat', "rollback")
-        check_dump_output(dump_output2)
-        assert_equal(sha256sum_file(dump_output['path']), sha256sum_file(dump_output2['path']))
-
-        # Rollback with specific height
-        dump_output3 = n0.dumptxoutset('utxos3.dat', rollback=SNAPSHOT_BASE_HEIGHT)
-        check_dump_output(dump_output3)
-        assert_equal(sha256sum_file(dump_output['path']), sha256sum_file(dump_output3['path']))
-
-        # Specified height that is not a snapshot height
-        prev_snap_height = SNAPSHOT_BASE_HEIGHT - 1
-        dump_output4 = n0.dumptxoutset(path='utxos4.dat', rollback=prev_snap_height)
-        assert_equal(
-            dump_output4['txoutset_hash'],
-            "8a1db0d6e958ce0d7c963bc6fc91ead596c027129bacec68acc40351037b09d7")
-        assert sha256sum_file(dump_output['path']) != sha256sum_file(dump_output4['path'])
-
-        # Use a hash instead of a height
-        prev_snap_hash = n0.getblockhash(prev_snap_height)
-        dump_output5 = n0.dumptxoutset('utxos5.dat', rollback=prev_snap_hash)
-        assert_equal(sha256sum_file(dump_output4['path']), sha256sum_file(dump_output5['path']))
-
-        # TODO: This is a hack to set m_best_header to the correct value after
-        # dumptxoutset/reconsiderblock. Otherwise the wrong error messages are
-        # returned in following tests. It can be removed once this bug is
-        # fixed. See also https://github.com/bitcoin/bitcoin/issues/26245
-        self.restart_node(0, ["-reindex"])
-
-        # Ensure n0 is back at the tip
         assert_equal(n0.getblockchaininfo()["blocks"], FINAL_HEIGHT)
 
         self.test_snapshot_with_less_work(dump_output['path'])
@@ -485,7 +447,7 @@ class AssumeutxoTest(BitcoinTestFramework):
         # find coinbase output at snapshot height on node0 and scan for it on node1,
         # where the block is not available, but the snapshot was loaded successfully
         coinbase_tx = n0.getblock(snapshot_hash, verbosity=2)['tx'][0]
-        assert_raises_rpc_error(-1, "Block not available (not fully downloaded)", n1.getblock, snapshot_hash)
+        assert_raises_rpc_error(-1, "Block not found on disk", n1.getblock, snapshot_hash)
         coinbase_output_descriptor = coinbase_tx['vout'][0]['scriptPubKey']['desc']
         scan_result = n1.scantxoutset('start', [coinbase_output_descriptor])
         assert_equal(scan_result['success'], True)
@@ -557,7 +519,7 @@ class AssumeutxoTest(BitcoinTestFramework):
         self.log.info("Submit a spending transaction for a snapshot chainstate coin to the mempool")
         # spend the coinbase output of the first block that is not available on node1
         spend_coin_blockhash = n1.getblockhash(START_HEIGHT + 1)
-        assert_raises_rpc_error(-1, "Block not available (not fully downloaded)", n1.getblock, spend_coin_blockhash)
+        assert_raises_rpc_error(-1, "Block not found on disk", n1.getblock, spend_coin_blockhash)
         prev_tx = n0.getblock(spend_coin_blockhash, 3)['tx'][0]
         prevout = {"txid": prev_tx['txid'], "vout": 0, "scriptPubKey": prev_tx['vout'][0]['scriptPubKey']['hex']}
         privkey = n0.get_deterministic_priv_key().key

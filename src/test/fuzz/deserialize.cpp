@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2021 The Bitcoin Core developers
+// Copyright (c) 2009-2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -263,7 +263,7 @@ FUZZ_TARGET(service_deserialize, .init = initialize_deserialize)
 FUZZ_TARGET_DESERIALIZE(messageheader_deserialize, {
     CMessageHeader mh;
     DeserializeFromFuzzingInput(buffer, mh);
-    (void)mh.IsMessageTypeValid();
+    (void)mh.IsCommandValid();
 })
 FUZZ_TARGET(address_deserialize, .init = initialize_deserialize)
 {

@@ -1,4 +1,4 @@
-// Copyright (c) 2022 The Bitcoin Core developers
+// Copyright (c) 2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -28,13 +28,13 @@ BOOST_FIXTURE_TEST_SUITE(blockmanager_tests, BasicTestingSetup)
 BOOST_AUTO_TEST_CASE(blockmanager_find_block_pos)
 {
     const auto params {CreateChainParams(ArgsManager{}, ChainType::MAIN)};
-    KernelNotifications notifications{Assert(m_node.shutdown_request), m_node.exit_status, *Assert(m_node.warnings)};
+    KernelNotifications notifications{*Assert(m_node.shutdown), m_node.exit_status, *Assert(m_node.warnings)};
     const BlockManager::Options blockman_opts{
         .chainparams = *params,
         .blocks_dir = m_args.GetBlocksDirPath(),
         .notifications = notifications,
     };
-    BlockManager blockman{*Assert(m_node.shutdown_signal), blockman_opts};
+    BlockManager blockman{*Assert(m_node.shutdown), blockman_opts};
     // simulate adding a genesis block normally
     BOOST_CHECK_EQUAL(blockman.SaveBlockToDisk(params->GenesisBlock(), 0).nPos, BLOCK_SERIALIZATION_HEADER_SIZE);
     // simulate what happens during reindex
@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(blockmanager_find_block_pos)
     // now simulate what happens after reindex for the first new block processed
     // the actual block contents don't matter, just that it's a block.
     // verify that the write position is at offset 0x12d.
-    // this is a check to make sure that https://github.com/bitcoin/bitcoin/issues/21379 does not recur
+    // this is a check to make sure that https://github.com/briskcoin/briskcoin/issues/21379 does not recur
     // 8 bytes (for serialization header) + 285 (for serialized genesis block) = 293
     // add another 8 bytes for the second block's serialization header and we get 293 + 8 = 301
     FlatFilePos actual{blockman.SaveBlockToDisk(params->GenesisBlock(), 1)};
@@ -135,13 +135,13 @@ BOOST_FIXTURE_TEST_CASE(blockmanager_block_data_availability, TestChain100Setup)
 
 BOOST_AUTO_TEST_CASE(blockmanager_flush_block_file)
 {
-    KernelNotifications notifications{Assert(m_node.shutdown_request), m_node.exit_status, *Assert(m_node.warnings)};
+    KernelNotifications notifications{*Assert(m_node.shutdown), m_node.exit_status, *Assert(m_node.warnings)};
     node::BlockManager::Options blockman_opts{
         .chainparams = Params(),
         .blocks_dir = m_args.GetBlocksDirPath(),
         .notifications = notifications,
     };
-    BlockManager blockman{*Assert(m_node.shutdown_signal), blockman_opts};
+    BlockManager blockman{*Assert(m_node.shutdown), blockman_opts};
 
     // Test blocks with no transactions, not even a coinbase
     CBlock block1;

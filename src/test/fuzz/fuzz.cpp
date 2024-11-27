@@ -1,4 +1,4 @@
-// Copyright (c) 2009-present The Bitcoin Core developers
+// Copyright (c) 2009-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -49,7 +49,7 @@ static std::vector<const char*> g_args;
 static void SetArgs(int argc, char** argv) {
     for (int i = 1; i < argc; ++i) {
         // Only take into account arguments that start with `--`. The others are for the fuzz engine:
-        // `fuzz -runs=1 fuzz_corpora/address_deserialize_v2 --checkaddrman=5`
+        // `fuzz -runs=1 fuzz_seed_corpus/address_deserialize_v2 --checkaddrman=5`
         if (strlen(argv[i]) > 2 && argv[i][0] == '-' && argv[i][1] == '-') {
             g_args.push_back(argv[i]);
         }
@@ -106,7 +106,7 @@ void initialize()
     // randomness during the fuzz test, except:
     // - GetStrongRandBytes(), which is used for the creation of private key material.
     // - Creating a BasicTestingSetup or derived class will switch to a random seed.
-    SeedRandomStateForTest(SeedRand::ZEROS);
+    SeedRandomForTest(SeedRand::ZEROS);
 
     // Terminate immediately if a fuzzing harness ever tries to create a socket.
     // Individual tests can override this by pointing CreateSock to a mocked alternative.
@@ -152,10 +152,6 @@ void initialize()
     const auto it = FuzzTargets().find(g_fuzz_target);
     if (it == FuzzTargets().end()) {
         std::cerr << "No fuzz target compiled for " << g_fuzz_target << "." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-    if constexpr (!G_FUZZING) {
-        std::cerr << "Must compile with -DBUILD_FOR_FUZZING=ON to execute a fuzz target." << std::endl;
         std::exit(EXIT_FAILURE);
     }
     Assert(!g_test_one_input);

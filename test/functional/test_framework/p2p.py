@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # Copyright (c) 2010 ArtForz -- public domain half-a-node
 # Copyright (c) 2012 Jeff Garzik
-# Copyright (c) 2010-2022 The Bitcoin Core developers
+# Copyright (c) 2010-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
-"""Test objects for interacting with a bitcoind node over the p2p protocol.
+"""Test objects for interacting with a briskcoind node over the p2p protocol.
 
-The P2PInterface objects interact with the bitcoind nodes under test using the
+The P2PInterface objects interact with the briskcoind nodes under test using the
 node's p2p interface. They can be used to send messages to the node, and
 callbacks can be registered that execute when messages are received from the
 node. Messages are sent to/received from the node on an asyncio event loop.
@@ -188,7 +188,6 @@ class P2PConnection(asyncio.Protocol):
         self.on_connection_send_msg = None
         self.recvbuf = b""
         self.magic_bytes = MAGIC_BYTES[net]
-        self.p2p_connected_to_node = dstport != 0
 
     def peer_connect(self, dstaddr, dstport, *, net, timeout_factor, supports_v2_p2p):
         self.peer_connect_helper(dstaddr, dstport, net, timeout_factor)
@@ -196,7 +195,7 @@ class P2PConnection(asyncio.Protocol):
             self.v2_state = EncryptedP2PState(initiating=True, net=net)
 
         loop = NetworkThread.network_event_loop
-        logger.debug('Connecting to Bitcoin Node: %s:%d' % (self.dstaddr, self.dstport))
+        logger.debug('Connecting to Briskcoin Node: %s:%d' % (self.dstaddr, self.dstport))
         coroutine = loop.create_connection(lambda: self, host=self.dstaddr, port=self.dstport)
         return lambda: loop.call_soon_threadsafe(loop.create_task, coroutine)
 
@@ -206,7 +205,7 @@ class P2PConnection(asyncio.Protocol):
         if supports_v2_p2p:
             self.v2_state = EncryptedP2PState(initiating=False, net=net)
 
-        logger.debug('Listening for Bitcoin Node with id: {}'.format(connect_id))
+        logger.debug('Listening for Briskcoin Node with id: {}'.format(connect_id))
         return lambda: NetworkThread.listen(self, connect_cb, idx=connect_id)
 
     def peer_disconnect(self):
@@ -218,12 +217,7 @@ class P2PConnection(asyncio.Protocol):
     def connection_made(self, transport):
         """asyncio callback when a connection is opened."""
         assert not self._transport
-        info = transport.get_extra_info("socket")
-        us = info.getsockname()
-        them = info.getpeername()
-        logger.debug(f"Connected: us={us[0]}:{us[1]}, them={them[0]}:{them[1]}")
-        self.dstaddr = them[0]
-        self.dstport = them[1]
+        logger.debug("Connected & Listening: %s:%d" % (self.dstaddr, self.dstport))
         self._transport = transport
         # in an inbound connection to the TestNode with P2PConnection as the initiator, [TestNode <---- P2PConnection]
         # send the initial handshake immediately
@@ -439,7 +433,7 @@ class P2PConnection(asyncio.Protocol):
 
 
 class P2PInterface(P2PConnection):
-    """A high-level P2P interface class for communicating with a Bitcoin node.
+    """A high-level P2P interface class for communicating with a Briskcoin node.
 
     This class provides high-level callbacks for processing P2P message
     payloads, as well as convenience methods for interacting with the
@@ -809,13 +803,12 @@ class P2PDataStore(P2PInterface):
         self.getdata_requests = []
 
     def on_getdata(self, message):
-        """Check for the tx/block in our stores and if found, reply with MSG_TX or MSG_BLOCK."""
+        """Check for the tx/block in our stores and if found, reply with an inv message."""
         for inv in message.inv:
             self.getdata_requests.append(inv.hash)
-            invtype = inv.type & MSG_TYPE_MASK
-            if (invtype == MSG_TX or invtype == MSG_WTX) and inv.hash in self.tx_store.keys():
+            if (inv.type & MSG_TYPE_MASK) == MSG_TX and inv.hash in self.tx_store.keys():
                 self.send_message(msg_tx(self.tx_store[inv.hash]))
-            elif invtype == MSG_BLOCK and inv.hash in self.block_store.keys():
+            elif (inv.type & MSG_TYPE_MASK) == MSG_BLOCK and inv.hash in self.block_store.keys():
                 self.send_message(msg_block(self.block_store[inv.hash]))
             else:
                 logger.debug('getdata message type {} received.'.format(hex(inv.type)))

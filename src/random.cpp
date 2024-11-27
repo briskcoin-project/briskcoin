@@ -1,9 +1,9 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <bitcoin-build-config.h> // IWYU pragma: keep
+#include <config/briskcoin-config.h> // IWYU pragma: keep
 
 #include <random.h>
 
@@ -34,7 +34,7 @@
 #include <sys/time.h>
 #endif
 
-#if defined(HAVE_GETRANDOM) || (defined(HAVE_GETENTROPY_RAND) && defined(__APPLE__))
+#if defined(HAVE_GETRANDOM) || (defined(HAVE_GETENTROPY_RAND) && defined(MAC_OSX))
 #include <sys/random.h>
 #endif
 
@@ -387,7 +387,7 @@ void GetOSRand(unsigned char *ent32)
        The function call is always successful.
      */
     arc4random_buf(ent32, NUM_OS_RANDOM_BYTES);
-#elif defined(HAVE_GETENTROPY_RAND) && defined(__APPLE__)
+#elif defined(HAVE_GETENTROPY_RAND) && defined(MAC_OSX)
     if (getentropy(ent32, NUM_OS_RANDOM_BYTES) != 0) {
         RandFailure();
     }
@@ -599,10 +599,10 @@ void SeedPeriodic(CSHA512& hasher, RNGState& rng) noexcept
     // Add the events hasher into the mix
     rng.SeedEvents(hasher);
 
-    // Dynamic environment data (clocks, resource usage, ...)
+    // Dynamic environment data (performance monitoring, ...)
     auto old_size = hasher.Size();
     RandAddDynamicEnv(hasher);
-    LogDebug(BCLog::RAND, "Feeding %i bytes of dynamic environment data into RNG\n", hasher.Size() - old_size);
+    LogPrint(BCLog::RAND, "Feeding %i bytes of dynamic environment data into RNG\n", hasher.Size() - old_size);
 
     // Strengthen for 10 ms
     SeedStrengthen(hasher, rng, 10ms);
@@ -616,13 +616,13 @@ void SeedStartup(CSHA512& hasher, RNGState& rng) noexcept
     // Everything that the 'slow' seeder includes.
     SeedSlow(hasher, rng);
 
-    // Dynamic environment data (clocks, resource usage, ...)
+    // Dynamic environment data (performance monitoring, ...)
     auto old_size = hasher.Size();
     RandAddDynamicEnv(hasher);
 
     // Static environment data
     RandAddStaticEnv(hasher);
-    LogDebug(BCLog::RAND, "Feeding %i bytes of environment data into RNG\n", hasher.Size() - old_size);
+    LogPrint(BCLog::RAND, "Feeding %i bytes of environment data into RNG\n", hasher.Size() - old_size);
 
     // Strengthen for 100 ms
     SeedStrengthen(hasher, rng, 100ms);

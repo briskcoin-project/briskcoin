@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2022 The Bitcoin Core developers
+# Copyright (c) 2014-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Run regression test suite.
@@ -8,7 +8,7 @@ This module calls down into individual test cases via subprocess. It will
 forward all unrecognized arguments onto the individual test scripts.
 
 For a description of arguments recognized by test scripts, see
-`test/functional/test_framework/test_framework.py:BitcoinTestFramework.main`.
+`test/functional/test_framework/test_framework.py:BriskcoinTestFramework.main`.
 
 """
 
@@ -96,13 +96,10 @@ BASE_SCRIPTS = [
     'feature_fee_estimation.py',
     'feature_taproot.py',
     'feature_block.py',
-    'p2p_node_network_limited.py --v1transport',
-    'p2p_node_network_limited.py --v2transport',
     # vv Tests less than 2m vv
     'mining_getblocktemplate_longpoll.py',
     'p2p_segwit.py',
     'feature_maxuploadtarget.py',
-    'feature_assumeutxo.py',
     'mempool_updatefromblock.py',
     'mempool_persist.py --descriptors',
     # vv Tests less than 60s vv
@@ -160,7 +157,6 @@ BASE_SCRIPTS = [
     'wallet_importmulti.py --legacy-wallet',
     'mempool_limit.py',
     'rpc_txoutproof.py',
-    'rpc_orphans.py',
     'wallet_listreceivedby.py --legacy-wallet',
     'wallet_listreceivedby.py --descriptors',
     'wallet_abandonconflict.py --legacy-wallet',
@@ -183,8 +179,8 @@ BASE_SCRIPTS = [
     'interface_zmq.py',
     'rpc_invalid_address_message.py',
     'rpc_validateaddress.py',
-    'interface_bitcoin_cli.py --legacy-wallet',
-    'interface_bitcoin_cli.py --descriptors',
+    'interface_briskcoin_cli.py --legacy-wallet',
+    'interface_briskcoin_cli.py --descriptors',
     'feature_bind_extra.py',
     'mempool_resurrect.py',
     'wallet_txn_doublespend.py --mineblock',
@@ -358,6 +354,7 @@ BASE_SCRIPTS = [
     'wallet_coinbase_category.py --descriptors',
     'feature_filelock.py',
     'feature_loadblock.py',
+    'feature_assumeutxo.py',
     'wallet_assumeutxo.py --descriptors',
     'p2p_dos_header_tree.py',
     'p2p_add_connections.py',
@@ -388,6 +385,8 @@ BASE_SCRIPTS = [
     'feature_coinstatsindex.py',
     'wallet_orphanedreward.py',
     'wallet_timelock.py',
+    'p2p_node_network_limited.py --v1transport',
+    'p2p_node_network_limited.py --v2transport',
     'p2p_permissions.py',
     'feature_blocksdir.py',
     'wallet_startup.py',
@@ -407,7 +406,6 @@ BASE_SCRIPTS = [
     'feature_shutdown.py',
     'wallet_migration.py',
     'p2p_ibd_txrelay.py',
-    'p2p_seednode.py',
     # Don't append tests at the end to avoid merge conflicts
     # Put them in a random line within the section that fits their approximate run-time
 ]
@@ -444,11 +442,11 @@ def main():
     parser.add_argument('--failfast', '-F', action='store_true', help='stop execution after the first test failure')
     parser.add_argument('--filter', help='filter scripts to run by regular expression')
     parser.add_argument("--nocleanup", dest="nocleanup", default=False, action="store_true",
-                        help="Leave bitcoinds and test.* datadir on exit or error")
+                        help="Leave briskcoinds and test.* datadir on exit or error")
     parser.add_argument('--resultsfile', '-r', help='store test results (as CSV) to the provided file')
 
+
     args, unknown_args = parser.parse_known_args()
-    fail_on_warn = args.ci
     if not args.ansi:
         global DEFAULT, BOLD, GREEN, RED
         DEFAULT = ("", "")
@@ -485,11 +483,11 @@ def main():
         assert results_filepath.parent.exists(), "Results file parent directory does not exist"
         logging.debug("Test results will be written to " + str(results_filepath))
 
-    enable_bitcoind = config["components"].getboolean("ENABLE_BITCOIND")
+    enable_briskcoind = config["components"].getboolean("ENABLE_BRISKCOIND")
 
-    if not enable_bitcoind:
+    if not enable_briskcoind:
         print("No functional tests to run.")
-        print("Re-compile with the -DBUILD_DAEMON=ON build option")
+        print("Rerun ./configure with --with-daemon and then make")
         sys.exit(1)
 
     # Build list of tests
@@ -523,28 +521,15 @@ def main():
         test_list += BASE_SCRIPTS
 
     # Remove the test cases that the user has explicitly asked to exclude.
-    # The user can specify a test case with or without the .py extension.
     if args.exclude:
-
-        def print_warning_missing_test(test_name):
-            print("{}WARNING!{} Test '{}' not found in current test list. Check the --exclude list.".format(BOLD[1], BOLD[0], test_name))
-            if fail_on_warn:
-                sys.exit(1)
-
-        def remove_tests(exclude_list):
-            if not exclude_list:
-                print_warning_missing_test(exclude_test)
+        exclude_tests = [test.split('.py')[0] for test in args.exclude.split(',')]
+        for exclude_test in exclude_tests:
+            # Remove <test_name>.py and <test_name>.py --arg from the test list
+            exclude_list = [test for test in test_list if test.split('.py')[0] == exclude_test]
             for exclude_item in exclude_list:
                 test_list.remove(exclude_item)
-
-        exclude_tests = [test.strip() for test in args.exclude.split(",")]
-        for exclude_test in exclude_tests:
-            # A space in the name indicates it has arguments such as "wallet_basic.py --descriptors"
-            if ' ' in exclude_test:
-                remove_tests([test for test in test_list if test.replace('.py', '') == exclude_test.replace('.py', '')])
-            else:
-                # Exclude all variants of a test
-                remove_tests([test for test in test_list if test.split('.py')[0] == exclude_test.split('.py')[0]])
+            if not exclude_list:
+                print("{}WARNING!{} Test '{}' not found in current test list.".format(BOLD[1], BOLD[0], exclude_test))
 
     if args.filter:
         test_list = list(filter(re.compile(args.filter).search, test_list))
@@ -567,7 +552,7 @@ def main():
                   f"A minimum of {MIN_NO_CLEANUP_SPACE // (1024 * 1024 * 1024)} GB of free space is required.")
         passon_args.append("--nocleanup")
 
-    check_script_list(src_dir=config["environment"]["SRCDIR"], fail_on_warn=fail_on_warn)
+    check_script_list(src_dir=config["environment"]["SRCDIR"], fail_on_warn=args.ci)
     check_script_prefixes()
 
     if not args.keepcache:
@@ -575,6 +560,7 @@ def main():
 
     run_tests(
         test_list=test_list,
+        src_dir=config["environment"]["SRCDIR"],
         build_dir=config["environment"]["BUILDDIR"],
         tmpdir=tmpdir,
         jobs=args.jobs,
@@ -586,14 +572,14 @@ def main():
         results_filepath=results_filepath,
     )
 
-def run_tests(*, test_list, build_dir, tmpdir, jobs=1, enable_coverage=False, args=None, combined_logs_len=0, failfast=False, use_term_control, results_filepath=None):
+def run_tests(*, test_list, src_dir, build_dir, tmpdir, jobs=1, enable_coverage=False, args=None, combined_logs_len=0, failfast=False, use_term_control, results_filepath=None):
     args = args or []
 
-    # Warn if bitcoind is already running
+    # Warn if briskcoind is already running
     try:
         # pgrep exits with code zero when one or more matching processes found
-        if subprocess.run(["pgrep", "-x", "bitcoind"], stdout=subprocess.DEVNULL).returncode == 0:
-            print("%sWARNING!%s There is already a bitcoind process running on this system. Tests may fail unexpectedly due to resource contention!" % (BOLD[1], BOLD[0]))
+        if subprocess.run(["pgrep", "-x", "briskcoind"], stdout=subprocess.DEVNULL).returncode == 0:
+            print("%sWARNING!%s There is already a briskcoind process running on this system. Tests may fail unexpectedly due to resource contention!" % (BOLD[1], BOLD[0]))
     except OSError:
         # pgrep not supported
         pass
@@ -606,12 +592,12 @@ def run_tests(*, test_list, build_dir, tmpdir, jobs=1, enable_coverage=False, ar
     # Warn if there is not enough space on the testing dir
     min_space = MIN_FREE_SPACE + (jobs - 1) * ADDITIONAL_SPACE_PER_JOB
     if shutil.disk_usage(tmpdir).free < min_space:
-        print(f"{BOLD[1]}WARNING!{BOLD[0]} There may be insufficient free space in {tmpdir} to run the Bitcoin functional test suite. "
+        print(f"{BOLD[1]}WARNING!{BOLD[0]} There may be insufficient free space in {tmpdir} to run the Briskcoin functional test suite. "
               f"Running the test suite with fewer than {min_space // (1024 * 1024)} MB of free space might cause tests to fail.")
 
-    tests_dir = f"{build_dir}/test/functional/"
+    tests_dir = src_dir + '/test/functional/'
     # This allows `test_runner.py` to work from an out-of-source build directory using a symlink,
-    # a hard link or a copy on any platform. See https://github.com/bitcoin/bitcoin/pull/27561.
+    # a hard link or a copy on any platform. See https://github.com/briskcoin/briskcoin/pull/27561.
     sys.path.append(tests_dir)
 
     flags = ['--cachedir={}'.format(cache_dir)] + args
@@ -876,6 +862,7 @@ def check_script_list(*, src_dir, fail_on_warn):
     if len(missed_tests) != 0:
         print("%sWARNING!%s The following scripts are not being run: %s. Check the test lists in test_runner.py." % (BOLD[1], BOLD[0], str(missed_tests)))
         if fail_on_warn:
+            # On CI this warning is an error to prevent merging incomplete commits into master
             sys.exit(1)
 
 
@@ -886,7 +873,7 @@ class RPCCoverage():
     Coverage calculation works by having each test script subprocess write
     coverage files into a particular directory. These files contain the RPC
     commands invoked during testing, as well as a complete listing of RPC
-    commands per `bitcoin-cli help` (`rpc_interface.txt`).
+    commands per `briskcoin-cli help` (`rpc_interface.txt`).
 
     After all tests complete, the commands run are combined and diff'd against
     the complete list to calculate uncovered RPC commands.

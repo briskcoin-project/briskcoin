@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 The Bitcoin Core developers
+// Copyright (c) 2020-2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -39,7 +39,7 @@ FUZZ_TARGET(crypto_aeadchacha20poly1305)
     // data).
     InsecureRandomContext rng(provider.ConsumeIntegral<uint64_t>());
 
-    LIMITED_WHILE(provider.ConsumeBool(), 100)
+    LIMITED_WHILE(provider.ConsumeBool(), 10000)
     {
         // Mode:
         // - Bit 0: whether to use single-plain Encrypt/Decrypt; otherwise use a split at prefix.
@@ -130,7 +130,7 @@ FUZZ_TARGET(crypto_fschacha20poly1305)
     // data).
     InsecureRandomContext rng(provider.ConsumeIntegral<uint64_t>());
 
-    LIMITED_WHILE(provider.ConsumeBool(), 100)
+    LIMITED_WHILE(provider.ConsumeBool(), 10000)
     {
         // Mode:
         // - Bit 0: whether to use single-plain Encrypt/Decrypt; otherwise use a split at prefix.

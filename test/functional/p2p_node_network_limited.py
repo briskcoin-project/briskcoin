@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2021 The Bitcoin Core developers
+# Copyright (c) 2017-2021 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Tests NODE_NETWORK_LIMITED.
@@ -17,7 +17,7 @@ from test_framework.messages import (
     msg_getdata,
 )
 from test_framework.p2p import P2PInterface
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.util import (
     assert_equal,
     assert_raises_rpc_error,
@@ -42,7 +42,7 @@ class P2PIgnoreInv(P2PInterface):
         getdata_request.inv.append(CInv(MSG_BLOCK, int(blockhash, 16)))
         self.send_message(getdata_request)
 
-class NodeNetworkLimitedTest(BitcoinTestFramework):
+class NodeNetworkLimitedTest(BriskcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 3
@@ -102,10 +102,10 @@ class NodeNetworkLimitedTest(BitcoinTestFramework):
         tip_height = pruned_node.getblockcount()
         limit_buffer = 2
         # Prevent races by waiting for the tip to arrive first
-        self.wait_until(lambda: not try_rpc(-1, "Block not available (not fully downloaded)", full_node.getblock, pruned_node.getbestblockhash()))
+        self.wait_until(lambda: not try_rpc(-1, "Block not found", full_node.getblock, pruned_node.getbestblockhash()))
         for height in range(start_height_full_node + 1, tip_height + 1):
             if height <= tip_height - (NODE_NETWORK_LIMITED_MIN_BLOCKS - limit_buffer):
-                assert_raises_rpc_error(-1, "Block not available (not fully downloaded)", full_node.getblock, pruned_node.getblockhash(height))
+                assert_raises_rpc_error(-1, "Block not found on disk", full_node.getblock, pruned_node.getblockhash(height))
             else:
                 full_node.getblock(pruned_node.getblockhash(height))  # just assert it does not throw an exception
 

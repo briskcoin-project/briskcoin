@@ -1,11 +1,11 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Copyright (c) 2017 The Zcash developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_PUBKEY_H
-#define BITCOIN_PUBKEY_H
+#ifndef BRISKCOIN_PUBKEY_H
+#define BRISKCOIN_PUBKEY_H
 
 #include <hash.h>
 #include <serialize.h>
@@ -254,7 +254,7 @@ public:
     bool IsNull() const { return m_keydata.IsNull(); }
 
     /** Construct an x-only pubkey from exactly 32 bytes. */
-    constexpr explicit XOnlyPubKey(std::span<const unsigned char> bytes) : m_keydata{bytes} {}
+    explicit XOnlyPubKey(Span<const unsigned char> bytes);
 
     /** Construct an x-only pubkey from a normal pubkey. */
     explicit XOnlyPubKey(const CPubKey& pubkey) : XOnlyPubKey(Span{pubkey}.subspan(1, 32)) {}
@@ -378,4 +378,4 @@ struct CExtPubKey {
     [[nodiscard]] bool Derive(CExtPubKey& out, unsigned int nChild) const;
 };
 
-#endif // BITCOIN_PUBKEY_H
+#endif // BRISKCOIN_PUBKEY_H

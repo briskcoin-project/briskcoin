@@ -1,4 +1,4 @@
-// Copyright (c) 2023-present The Bitcoin Core developers
+// Copyright (c) 2023-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -43,21 +43,20 @@ static CService ip(uint32_t i)
     return CService{CNetAddr{s}, Params().GetDefaultPort()};
 }
 
-struct PeerTest : LogIPsTestingSetup {
 /** Create a peer and connect to it. If the optional `address` (IP/CJDNS only) isn't passed, a random address is created. */
-void AddPeer(NodeId& id, std::vector<CNode*>& nodes, PeerManager& peerman, ConnmanTestMsg& connman, ConnectionType conn_type, bool onion_peer = false, std::optional<std::string> address = std::nullopt)
+static void AddPeer(NodeId& id, std::vector<CNode*>& nodes, PeerManager& peerman, ConnmanTestMsg& connman, ConnectionType conn_type, bool onion_peer = false, std::optional<std::string> address = std::nullopt)
 {
     CAddress addr{};
 
     if (address.has_value()) {
         addr = CAddress{MaybeFlipIPv6toCJDNS(LookupNumeric(address.value(), Params().GetDefaultPort())), NODE_NONE};
     } else if (onion_peer) {
-        auto tor_addr{m_rng.randbytes(ADDR_TORV3_SIZE)};
+        auto tor_addr{g_insecure_rand_ctx.randbytes(ADDR_TORV3_SIZE)};
         BOOST_REQUIRE(addr.SetSpecial(OnionToString(tor_addr)));
     }
 
     while (!addr.IsLocal() && !addr.IsRoutable()) {
-        addr = CAddress{ip(m_rng.randbits(32)), NODE_NONE};
+        addr = CAddress{ip(g_insecure_rand_ctx.randbits(32)), NODE_NONE};
     }
 
     BOOST_REQUIRE(addr.IsValid());
@@ -81,9 +80,8 @@ void AddPeer(NodeId& id, std::vector<CNode*>& nodes, PeerManager& peerman, Connm
 
     connman.AddTestNode(node);
 }
-}; // struct PeerTest
 
-BOOST_FIXTURE_TEST_CASE(test_addnode_getaddednodeinfo_and_connection_detection, PeerTest)
+BOOST_AUTO_TEST_CASE(test_addnode_getaddednodeinfo_and_connection_detection)
 {
     auto connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman, *m_node.netgroupman, Params());
     auto peerman = PeerManager::make(*connman, *m_node.addrman, nullptr, *m_node.chainman, *m_node.mempool, *m_node.warnings, {});

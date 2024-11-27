@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2024-present The Bitcoin Core developers
+# Copyright (c) 2024-present The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """
@@ -21,7 +21,7 @@ from test_framework.messages import (
 from test_framework.p2p import (
     P2PInterface,
 )
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.util import (
     assert_equal,
     assert_greater_than,
@@ -31,10 +31,10 @@ from test_framework.wallet import (
     MiniWalletMode,
 )
 
-# 1sat/vB feerate denominated in BTC/KvB
+# 1sat/vB feerate denominated in BKC/KvB
 FEERATE_1SAT_VB = Decimal("0.00001000")
 
-class PackageRelayTest(BitcoinTestFramework):
+class PackageRelayTest(BriskcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 4
@@ -48,6 +48,9 @@ class PackageRelayTest(BitcoinTestFramework):
 
     def raise_network_minfee(self):
         fill_mempool(self, self.nodes[0])
+
+        self.log.debug("Wait for the network to sync mempools")
+        self.sync_mempools()
 
         self.log.debug("Check that all nodes' mempool minimum feerates are above min relay feerate")
         for node in self.nodes:
@@ -104,7 +107,7 @@ class PackageRelayTest(BitcoinTestFramework):
 
         # 3: 2-parent-1-child package. Both parents are above mempool min feerate. No package submission happens.
         # We require packages to be child-with-unconfirmed-parents and only allow 1-parent-1-child packages.
-        package_hex_3, parent_31, _parent_32, child_3 = self.create_package_2p1c(self.wallet)
+        package_hex_3, parent_31, parent_32, child_3 = self.create_package_2p1c(self.wallet)
 
         # 4: parent + child package where the child spends 2 different outputs from the parent.
         package_hex_4, parent_4, child_4 = self.create_package_2outs(self.wallet)

@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 The Bitcoin Core developers
+// Copyright (c) 2020-2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -41,9 +41,7 @@ FUZZ_TARGET(cuckoocache)
         if (fuzzed_data_provider.ConsumeBool()) {
             cuckoo_cache.insert(fuzzed_data_provider.ConsumeBool());
         } else {
-            auto e = fuzzed_data_provider.ConsumeBool();
-            auto erase = fuzzed_data_provider.ConsumeBool();
-            cuckoo_cache.contains(e, erase);
+            cuckoo_cache.contains(fuzzed_data_provider.ConsumeBool(), fuzzed_data_provider.ConsumeBool());
         }
     }
     fuzzed_data_provider_ptr = nullptr;

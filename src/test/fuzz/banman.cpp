@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2022 The Bitcoin Core developers
+// Copyright (c) 2020-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -78,9 +78,7 @@ FUZZ_TARGET(banman, .init = initialize_banman)
                             contains_invalid = true;
                         }
                     }
-                    auto ban_time_offset = ConsumeBanTimeOffset(fuzzed_data_provider);
-                    auto since_unix_epoch = fuzzed_data_provider.ConsumeBool();
-                    ban_man.Ban(net_addr, ban_time_offset, since_unix_epoch);
+                    ban_man.Ban(net_addr, ConsumeBanTimeOffset(fuzzed_data_provider), fuzzed_data_provider.ConsumeBool());
                 },
                 [&] {
                     CSubNet subnet{ConsumeSubNet(fuzzed_data_provider)};
@@ -88,9 +86,7 @@ FUZZ_TARGET(banman, .init = initialize_banman)
                     if (!subnet.IsValid()) {
                         contains_invalid = true;
                     }
-                    auto ban_time_offset = ConsumeBanTimeOffset(fuzzed_data_provider);
-                    auto since_unix_epoch = fuzzed_data_provider.ConsumeBool();
-                    ban_man.Ban(subnet, ban_time_offset, since_unix_epoch);
+                    ban_man.Ban(subnet, ConsumeBanTimeOffset(fuzzed_data_provider), fuzzed_data_provider.ConsumeBool());
                 },
                 [&] {
                     ban_man.ClearBanned();

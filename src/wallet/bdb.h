@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_WALLET_BDB_H
-#define BITCOIN_WALLET_BDB_H
+#ifndef BRISKCOIN_WALLET_BDB_H
+#define BRISKCOIN_WALLET_BDB_H
 
 #include <clientversion.h>
 #include <common/system.h>
@@ -208,7 +208,6 @@ public:
     bool TxnBegin() override;
     bool TxnCommit() override;
     bool TxnAbort() override;
-    bool HasActiveTxn() override { return activeTxn != nullptr; }
     DbTxn* txn() const { return activeTxn; }
 };
 
@@ -222,4 +221,4 @@ bool BerkeleyDatabaseSanityCheck();
 std::unique_ptr<BerkeleyDatabase> MakeBerkeleyDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
 } // namespace wallet
 
-#endif // BITCOIN_WALLET_BDB_H
+#endif // BRISKCOIN_WALLET_BDB_H

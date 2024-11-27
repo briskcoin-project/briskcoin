@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_TXMEMPOOL_H
-#define BITCOIN_TXMEMPOOL_H
+#ifndef BRISKCOIN_TXMEMPOOL_H
+#define BRISKCOIN_TXMEMPOOL_H
 
 #include <coins.h>
 #include <consensus/amount.h>
@@ -851,7 +851,7 @@ public:
     CCoinsViewMemPool(CCoinsView* baseIn, const CTxMemPool& mempoolIn);
     /** GetCoin, returning whether it exists and is not spent. Also updates m_non_base_coins if the
      * coin is not fetched from base. */
-    std::optional<Coin> GetCoin(const COutPoint& outpoint) const override;
+    bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
     /** Add the coins created by this transaction. These coins are only temporarily stored in
      * m_temp_added and cannot be flushed to the back end. Only used for package validation. */
     void PackageAddTransaction(const CTransactionRef& tx);
@@ -860,4 +860,4 @@ public:
     /** Clear m_temp_added and m_non_base_coins. */
     void Reset();
 };
-#endif // BITCOIN_TXMEMPOOL_H
+#endif // BRISKCOIN_TXMEMPOOL_H

@@ -1,17 +1,14 @@
-// Copyright (c) 2011-2022 The Bitcoin Core developers
+// Copyright (c) 2011-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <arith_uint256.h>
-#include <consensus/validation.h>
-#include <policy/policy.h>
 #include <primitives/transaction.h>
 #include <pubkey.h>
 #include <script/sign.h>
 #include <script/signingprovider.h>
 #include <test/util/random.h>
 #include <test/util/setup_common.h>
-#include <test/util/transaction_utils.h>
 #include <txorphanage.h>
 
 #include <array>
@@ -24,8 +21,6 @@ BOOST_FIXTURE_TEST_SUITE(orphanage_tests, TestingSetup)
 class TxOrphanageTest : public TxOrphanage
 {
 public:
-    TxOrphanageTest(FastRandomContext& rng) : m_rng{rng} {}
-
     inline size_t CountOrphans() const
     {
         return m_orphans.size();
@@ -34,16 +29,14 @@ public:
     CTransactionRef RandomOrphan()
     {
         std::map<Wtxid, OrphanTx>::iterator it;
-        it = m_orphans.lower_bound(Wtxid::FromUint256(m_rng.rand256()));
+        it = m_orphans.lower_bound(Wtxid::FromUint256(InsecureRand256()));
         if (it == m_orphans.end())
             it = m_orphans.begin();
         return it->second.tx;
     }
-
-    FastRandomContext& m_rng;
 };
 
-static void MakeNewKeyWithFastRandomContext(CKey& key, FastRandomContext& rand_ctx)
+static void MakeNewKeyWithFastRandomContext(CKey& key, FastRandomContext& rand_ctx = g_insecure_rand_ctx)
 {
     std::vector<unsigned char> keydata;
     keydata = rand_ctx.randbytes(32);
@@ -111,11 +104,11 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
     // ecdsa_signature_parse_der_lax are executed during this test.
     // Specifically branches that run only when an ECDSA
     // signature's R and S values have leading zeros.
-    m_rng.Reseed(uint256{33});
+    g_insecure_rand_ctx.Reseed(uint256{33});
 
-    TxOrphanageTest orphanage{m_rng};
+    TxOrphanageTest orphanage;
     CKey key;
-    MakeNewKeyWithFastRandomContext(key, m_rng);
+    MakeNewKeyWithFastRandomContext(key);
     FillableSigningProvider keystore;
     BOOST_CHECK(keystore.AddKey(key));
 
@@ -129,7 +122,7 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
         CMutableTransaction tx;
         tx.vin.resize(1);
         tx.vin[0].prevout.n = 0;
-        tx.vin[0].prevout.hash = Txid::FromUint256(m_rng.rand256());
+        tx.vin[0].prevout.hash = Txid::FromUint256(InsecureRand256());
         tx.vin[0].scriptSig << OP_1;
         tx.vout.resize(1);
         tx.vout[0].nValue = 1*CENT;
@@ -371,23 +364,6 @@ BOOST_AUTO_TEST_CASE(get_children)
             BOOST_CHECK(EqualTxns(expected_parent2_node2, orphanage.GetChildrenFromDifferentPeer(parent2, node1)));
         }
     }
-}
-
-BOOST_AUTO_TEST_CASE(too_large_orphan_tx)
-{
-    TxOrphanage orphanage;
-    CMutableTransaction tx;
-    tx.vin.resize(1);
-
-    // check that txs larger than MAX_STANDARD_TX_WEIGHT are not added to the orphanage
-    BulkTransaction(tx, MAX_STANDARD_TX_WEIGHT + 4);
-    BOOST_CHECK_EQUAL(GetTransactionWeight(CTransaction(tx)), MAX_STANDARD_TX_WEIGHT + 4);
-    BOOST_CHECK(!orphanage.AddTx(MakeTransactionRef(tx), 0));
-
-    tx.vout.clear();
-    BulkTransaction(tx, MAX_STANDARD_TX_WEIGHT);
-    BOOST_CHECK_EQUAL(GetTransactionWeight(CTransaction(tx)), MAX_STANDARD_TX_WEIGHT);
-    BOOST_CHECK(orphanage.AddTx(MakeTransactionRef(tx), 0));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

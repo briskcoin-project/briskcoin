@@ -1,4 +1,4 @@
-// Copyright (c) 2022 The Bitcoin Core developers
+// Copyright (c) 2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -78,7 +78,7 @@ public:
     {
         std::vector<std::byte> expect(entry.span.size());
         InsecureRandomContext(entry.seed).fillrand(expect);
-        assert(std::ranges::equal(entry.span, expect));
+        assert(entry.span == expect);
     }
 
     void Deallocate(const Entry& entry)

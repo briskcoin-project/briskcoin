@@ -1,4 +1,4 @@
-// Copyright (c) 2022 The Bitcoin Core developers
+// Copyright (c) 2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -142,7 +142,7 @@ FUZZ_TARGET(coin_grinder_is_optimal)
     FastRandomContext fast_random_context{ConsumeUInt256(fuzzed_data_provider)};
     CoinSelectionParams coin_params{fast_random_context};
     coin_params.m_subtract_fee_outputs = false;
-    // Set effective feerate up to MAX_MONEY sats per 1'000'000 vB (2'100'000'000 sat/vB = 21'000 BTC/kvB).
+    // Set effective feerate up to MAX_MONEY sats per 1'000'000 vB (2'100'000'000 sat/vB = 21'000 BKC/kvB).
     coin_params.m_effective_feerate = CFeeRate{ConsumeMoney(fuzzed_data_provider, MAX_MONEY), 1'000'000};
     coin_params.m_min_change_target = ConsumeMoney(fuzzed_data_provider);
 
@@ -252,7 +252,7 @@ FUZZ_TARGET(coinselection)
     GroupCoins(fuzzed_data_provider, utxo_pool, coin_params, /*positive_only=*/false, group_all);
 
     for (const OutputGroup& group : group_all) {
-        const CoinEligibilityFilter filter{fuzzed_data_provider.ConsumeIntegral<int>(), fuzzed_data_provider.ConsumeIntegral<int>(), fuzzed_data_provider.ConsumeIntegral<uint64_t>()};
+        const CoinEligibilityFilter filter(fuzzed_data_provider.ConsumeIntegral<int>(), fuzzed_data_provider.ConsumeIntegral<int>(), fuzzed_data_provider.ConsumeIntegral<uint64_t>());
         (void)group.EligibleForSpending(filter);
     }
 

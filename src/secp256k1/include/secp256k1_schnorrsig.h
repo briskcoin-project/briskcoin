@@ -9,8 +9,8 @@ extern "C" {
 #endif
 
 /** This module implements a variant of Schnorr signatures compliant with
- *  Bitcoin Improvement Proposal 340 "Schnorr Signatures for secp256k1"
- *  (https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki).
+ *  Briskcoin Improvement Proposal 340 "Schnorr Signatures for secp256k1"
+ *  (https://github.com/briskcoin/bips/blob/master/bip-0340.mediawiki).
  */
 
 /** A pointer to a function to deterministically generate a nonce.
@@ -49,9 +49,9 @@ typedef int (*secp256k1_nonce_function_hardened)(
     void *data
 );
 
-/** An implementation of the nonce generation function as defined in Bitcoin
+/** An implementation of the nonce generation function as defined in Briskcoin
  *  Improvement Proposal 340 "Schnorr Signatures for secp256k1"
- *  (https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki).
+ *  (https://github.com/briskcoin/bips/blob/master/bip-0340.mediawiki).
  *
  *  If a data pointer is passed, it is assumed to be a pointer to 32 bytes of
  *  auxiliary random data as defined in BIP-340. If the data pointer is NULL,
@@ -79,7 +79,7 @@ SECP256K1_API const secp256k1_nonce_function_hardened secp256k1_nonce_function_b
  *             secp256k1_nonce_function_bip340 is used, then ndata must be a
  *             pointer to 32-byte auxiliary randomness as per BIP-340.
  */
-typedef struct secp256k1_schnorrsig_extraparams {
+typedef struct {
     unsigned char magic[4];
     secp256k1_nonce_function_hardened noncefp;
     void *ndata;

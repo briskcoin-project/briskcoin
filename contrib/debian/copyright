@@ -1,13 +1,13 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: Bitcoin
+Upstream-Name: Briskcoin
 Upstream-Contact: Satoshi Nakamoto <satoshin@gmx.com>
- irc://#bitcoin-core-dev@libera.chat
-Source: https://github.com/bitcoin/bitcoin
+ irc://#briskcoin-core-dev@libera.chat
+Source: https://github.com/briskcoin/briskcoin
 
 Files: *
-Copyright: 2009-2024, Bitcoin Core Developers
+Copyright: 2009-2024, Briskcoin Core Developers
 License: Expat
-Comment: The Bitcoin Core Developers encompasses all contributors to the
+Comment: The Briskcoin Core Developers encompasses all contributors to the
          project, listed in the release notes or the git log.
 
 Files: debian/*
@@ -67,12 +67,12 @@ Copyright: Stephen Hutchings, Jonas Schnelli
 License: Expat
 Comment: Modifications of Stephen Hutchings' Typicons
 
-Files: src/qt/res/icons/bitcoin.*
-       share/pixmaps/bitcoin*
-       src/qt/res/src/bitcoin.svg
+Files: src/qt/res/icons/briskcoin.*
+       share/pixmaps/briskcoin*
+       src/qt/res/src/briskcoin.svg
 Copyright: Bitboy, Jonas Schnelli
 License: public-domain
-Comment: Site: https://bitcointalk.org/?topic=1756.0
+Comment: Site: https://briskcointalk.org/?topic=1756.0
 
 Files: src/qt/res/icons/proxy.png
        src/qt/res/src/proxy.svg

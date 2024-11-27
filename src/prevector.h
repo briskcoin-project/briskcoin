@@ -1,17 +1,17 @@
-// Copyright (c) 2015-2022 The Bitcoin Core developers
+// Copyright (c) 2015-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_PREVECTOR_H
-#define BITCOIN_PREVECTOR_H
+#ifndef BRISKCOIN_PREVECTOR_H
+#define BRISKCOIN_PREVECTOR_H
+
+#include <assert.h>
+#include <cstdlib>
+#include <stdint.h>
+#include <string.h>
 
 #include <algorithm>
-#include <cassert>
 #include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <iterator>
 #include <type_traits>
 #include <utility>
 
@@ -50,6 +50,7 @@ public:
         T* ptr{};
     public:
         typedef Diff difference_type;
+        typedef T value_type;
         typedef T* pointer;
         typedef T& reference;
         using element_type = T;
@@ -101,6 +102,7 @@ public:
         const T* ptr{};
     public:
         typedef Diff difference_type;
+        typedef const T value_type;
         typedef const T* pointer;
         typedef const T& reference;
         using element_type = const T;
@@ -210,7 +212,7 @@ private:
         std::fill_n(dst, count, value);
     }
 
-    template <std::input_iterator InputIterator>
+    template<typename InputIterator>
     void fill(T* dst, InputIterator first, InputIterator last) {
         while (first != last) {
             new(static_cast<void*>(dst)) T(*first);
@@ -229,7 +231,7 @@ public:
         fill(item_ptr(0), n, val);
     }
 
-    template <std::input_iterator InputIterator>
+    template<typename InputIterator>
     void assign(InputIterator first, InputIterator last) {
         size_type n = last - first;
         clear();
@@ -252,7 +254,7 @@ public:
         fill(item_ptr(0), n, val);
     }
 
-    template <std::input_iterator InputIterator>
+    template<typename InputIterator>
     prevector(InputIterator first, InputIterator last) {
         size_type n = last - first;
         change_capacity(n);
@@ -363,8 +365,7 @@ public:
             change_capacity(new_size + (new_size >> 1));
         }
         T* ptr = item_ptr(p);
-        T* dst = ptr + 1;
-        memmove(dst, ptr, (size() - p) * sizeof(T));
+        memmove(ptr + 1, ptr, (size() - p) * sizeof(T));
         _size++;
         new(static_cast<void*>(ptr)) T(value);
         return iterator(ptr);
@@ -377,13 +378,12 @@ public:
             change_capacity(new_size + (new_size >> 1));
         }
         T* ptr = item_ptr(p);
-        T* dst = ptr + count;
-        memmove(dst, ptr, (size() - p) * sizeof(T));
+        memmove(ptr + count, ptr, (size() - p) * sizeof(T));
         _size += count;
         fill(item_ptr(p), count, value);
     }
 
-    template <std::input_iterator InputIterator>
+    template<typename InputIterator>
     void insert(iterator pos, InputIterator first, InputIterator last) {
         size_type p = pos - begin();
         difference_type count = last - first;
@@ -392,8 +392,7 @@ public:
             change_capacity(new_size + (new_size >> 1));
         }
         T* ptr = item_ptr(p);
-        T* dst = ptr + count;
-        memmove(dst, ptr, (size() - p) * sizeof(T));
+        memmove(ptr + count, ptr, (size() - p) * sizeof(T));
         _size += count;
         fill(ptr, first, last);
     }
@@ -539,4 +538,4 @@ public:
     }
 };
 
-#endif // BITCOIN_PREVECTOR_H
+#endif // BRISKCOIN_PREVECTOR_H

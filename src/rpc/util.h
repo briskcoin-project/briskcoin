@@ -1,9 +1,9 @@
-// Copyright (c) 2017-2022 The Bitcoin Core developers
+// Copyright (c) 2017-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_RPC_UTIL_H
-#define BITCOIN_RPC_UTIL_H
+#ifndef BRISKCOIN_RPC_UTIL_H
+#define BRISKCOIN_RPC_UTIL_H
 
 #include <addresstype.h>
 #include <consensus/amount.h>
@@ -101,17 +101,6 @@ std::vector<unsigned char> ParseHexV(const UniValue& v, std::string_view name);
 std::vector<unsigned char> ParseHexO(const UniValue& o, std::string_view strKey);
 
 /**
- * Parses verbosity from provided UniValue.
- *
- * @param[in] arg The verbosity argument as an int (0, 1, 2,...) or bool if allow_bool is set to true
- * @param[in] default_verbosity The value to return if verbosity argument is null
- * @param[in] allow_bool If true, allows arg to be a bool and parses it
- * @returns An integer describing the verbosity level (e.g. 0, 1, 2, etc.)
- * @throws JSONRPCError if allow_bool is false but arg provided is boolean
- */
-int ParseVerbosity(const UniValue& arg, int default_verbosity, bool allow_bool);
-
-/**
  * Validate and return a CAmount from a UniValue number or string.
  *
  * @param[in] value     UniValue number or string to parse.
@@ -120,8 +109,8 @@ int ParseVerbosity(const UniValue& arg, int default_verbosity, bool allow_bool);
  */
 CAmount AmountFromValue(const UniValue& value, int decimals = 8);
 /**
- * Parse a json number or string, denoting BTC/kvB, into a CFeeRate (sat/kvB).
- * Reject negative values or rates larger than 1BTC/kvB.
+ * Parse a json number or string, denoting BKC/kvB, into a CFeeRate (sat/kvB).
+ * Reject negative values or rates larger than 1BKC/kvB.
  */
 CFeeRate ParseFeeRate(const UniValue& json);
 
@@ -514,4 +503,4 @@ private:
 void PushWarnings(const UniValue& warnings, UniValue& obj);
 void PushWarnings(const std::vector<bilingual_str>& warnings, UniValue& obj);
 
-#endif // BITCOIN_RPC_UTIL_H
+#endif // BRISKCOIN_RPC_UTIL_H

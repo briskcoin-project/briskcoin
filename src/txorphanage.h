@@ -1,9 +1,9 @@
-// Copyright (c) 2021-2022 The Bitcoin Core developers
+// Copyright (c) 2021-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_TXORPHANAGE_H
-#define BITCOIN_TXORPHANAGE_H
+#ifndef BRISKCOIN_TXORPHANAGE_H
+#define BRISKCOIN_TXORPHANAGE_H
 
 #include <net.h>
 #include <primitives/block.h>
@@ -67,22 +67,16 @@ public:
     std::vector<std::pair<CTransactionRef, NodeId>> GetChildrenFromDifferentPeer(const CTransactionRef& parent, NodeId nodeid) const;
 
     /** Return how many entries exist in the orphange */
-    size_t Size() const
+    size_t Size()
     {
         return m_orphans.size();
     }
 
-    /** Allows providing orphan information externally */
-    struct OrphanTxBase {
+protected:
+    struct OrphanTx {
         CTransactionRef tx;
         NodeId fromPeer;
         NodeSeconds nTimeExpire;
-    };
-
-    std::vector<OrphanTxBase> GetOrphanTransactions() const;
-
-protected:
-    struct OrphanTx : public OrphanTxBase {
         size_t list_pos;
     };
 
@@ -115,4 +109,4 @@ protected:
     NodeSeconds m_next_sweep{0s};
 };
 
-#endif // BITCOIN_TXORPHANAGE_H
+#endif // BRISKCOIN_TXORPHANAGE_H

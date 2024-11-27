@@ -1,8 +1,7 @@
-// Copyright (c) 2009-present The Bitcoin Core developers
+// Copyright (c) 2009-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://opensource.org/license/mit/.
 
-#include <memusage.h>
 #include <span.h>
 #include <streams.h>
 #include <util/fs_helpers.h>
@@ -107,12 +106,12 @@ bool AutoFile::Commit()
     return ::FileCommit(m_file);
 }
 
+bool AutoFile::IsError()
+{
+    return ferror(m_file);
+}
+
 bool AutoFile::Truncate(unsigned size)
 {
     return ::TruncateFile(m_file, size);
-}
-
-size_t DataStream::GetMemoryUsage() const noexcept
-{
-    return sizeof(*this) + memusage::DynamicUsage(vch);
 }

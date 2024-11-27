@@ -1,9 +1,9 @@
-// Copyright (c) 2014-2020 The Bitcoin Core developers
+// Copyright (c) 2014-2020 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_CRYPTO_COMMON_H
-#define BITCOIN_CRYPTO_COMMON_H
+#ifndef BRISKCOIN_CRYPTO_COMMON_H
+#define BRISKCOIN_CRYPTO_COMMON_H
 
 #include <compat/endian.h>
 
@@ -70,12 +70,6 @@ uint64_t static inline ReadBE64(const unsigned char* ptr)
     return be64toh_internal(x);
 }
 
-void static inline WriteBE16(unsigned char* ptr, uint16_t x)
-{
-    uint16_t v = htobe16_internal(x);
-    memcpy(ptr, &v, 2);
-}
-
 void static inline WriteBE32(unsigned char* ptr, uint32_t x)
 {
     uint32_t v = htobe32_internal(x);
@@ -88,4 +82,4 @@ void static inline WriteBE64(unsigned char* ptr, uint64_t x)
     memcpy(ptr, &v, 8);
 }
 
-#endif // BITCOIN_CRYPTO_COMMON_H
+#endif // BRISKCOIN_CRYPTO_COMMON_H

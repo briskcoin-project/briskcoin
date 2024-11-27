@@ -1,4 +1,4 @@
-// Copyright (c) 2021 The Bitcoin Core developers
+// Copyright (c) 2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -23,8 +23,6 @@
 #include <mutex>
 #include <optional>
 #include <string>
-#include <sys/socket.h>
-#include <system_error>
 #include <thread>
 
 namespace ipc {
@@ -32,7 +30,7 @@ namespace capnp {
 namespace {
 void IpcLogFn(bool raise, std::string message)
 {
-    LogDebug(BCLog::IPC, "%s\n", message);
+    LogPrint(BCLog::IPC, "%s\n", message);
     if (raise) throw Exception(message);
 }
 
@@ -53,20 +51,11 @@ public:
         startLoop(exe_name);
         return mp::ConnectStream<messages::Init>(*m_loop, fd);
     }
-    void listen(int listen_fd, const char* exe_name, interfaces::Init& init) override
-    {
-        startLoop(exe_name);
-        if (::listen(listen_fd, /*backlog=*/5) != 0) {
-            throw std::system_error(errno, std::system_category());
-        }
-        mp::ListenConnections<messages::Init>(*m_loop, listen_fd, init);
-    }
-    void serve(int fd, const char* exe_name, interfaces::Init& init, const std::function<void()>& ready_fn = {}) override
+    void serve(int fd, const char* exe_name, interfaces::Init& init) override
     {
         assert(!m_loop);
         mp::g_thread_context.thread_name = mp::ThreadName(exe_name);
         m_loop.emplace(exe_name, &IpcLogFn, &m_context);
-        if (ready_fn) ready_fn();
         mp::ServeStream<messages::Init>(*m_loop, fd, init);
         m_loop->loop();
         m_loop.reset();

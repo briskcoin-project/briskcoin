@@ -1,4 +1,4 @@
-// Copyright (c) 2022 The Bitcoin Core developers
+// Copyright (c) 2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -77,6 +77,8 @@ std::optional<uint256> ReadSnapshotBaseBlockhash(fs::path chaindir)
     afile.seek(0, SEEK_END);
     if (position != afile.tell()) {
         LogPrintf("[snapshot] warning: unexpected trailing data in %s\n", read_from_str);
+    } else if (afile.IsError()) {
+        LogPrintf("[snapshot] warning: i/o error reading %s\n", read_from_str);
     }
     return base_blockhash;
 }

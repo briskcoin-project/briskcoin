@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_PROTOCOL_H
-#define BITCOIN_PROTOCOL_H
+#ifndef BRISKCOIN_PROTOCOL_H
+#define BRISKCOIN_PROTOCOL_H
 
 #include <kernel/messagestartchars.h> // IWYU pragma: export
 #include <netaddress.h>
@@ -21,40 +21,40 @@
 
 /** Message header.
  * (4) message start.
- * (12) message type.
+ * (12) command.
  * (4) size.
  * (4) checksum.
  */
 class CMessageHeader
 {
 public:
-    static constexpr size_t MESSAGE_TYPE_SIZE = 12;
+    static constexpr size_t COMMAND_SIZE = 12;
     static constexpr size_t MESSAGE_SIZE_SIZE = 4;
     static constexpr size_t CHECKSUM_SIZE = 4;
-    static constexpr size_t MESSAGE_SIZE_OFFSET = std::tuple_size_v<MessageStartChars> + MESSAGE_TYPE_SIZE;
+    static constexpr size_t MESSAGE_SIZE_OFFSET = std::tuple_size_v<MessageStartChars> + COMMAND_SIZE;
     static constexpr size_t CHECKSUM_OFFSET = MESSAGE_SIZE_OFFSET + MESSAGE_SIZE_SIZE;
-    static constexpr size_t HEADER_SIZE = std::tuple_size_v<MessageStartChars> + MESSAGE_TYPE_SIZE + MESSAGE_SIZE_SIZE + CHECKSUM_SIZE;
+    static constexpr size_t HEADER_SIZE = std::tuple_size_v<MessageStartChars> + COMMAND_SIZE + MESSAGE_SIZE_SIZE + CHECKSUM_SIZE;
 
     explicit CMessageHeader() = default;
 
-    /** Construct a P2P message header from message-start characters, a message type and the size of the message.
-     * @note Passing in a `msg_type` longer than MESSAGE_TYPE_SIZE will result in a run-time assertion error.
+    /** Construct a P2P message header from message-start characters, a command and the size of the message.
+     * @note Passing in a `pszCommand` longer than COMMAND_SIZE will result in a run-time assertion error.
      */
-    CMessageHeader(const MessageStartChars& pchMessageStartIn, const char* msg_type, unsigned int nMessageSizeIn);
+    CMessageHeader(const MessageStartChars& pchMessageStartIn, const char* pszCommand, unsigned int nMessageSizeIn);
 
-    std::string GetMessageType() const;
-    bool IsMessageTypeValid() const;
+    std::string GetCommand() const;
+    bool IsCommandValid() const;
 
-    SERIALIZE_METHODS(CMessageHeader, obj) { READWRITE(obj.pchMessageStart, obj.m_msg_type, obj.nMessageSize, obj.pchChecksum); }
+    SERIALIZE_METHODS(CMessageHeader, obj) { READWRITE(obj.pchMessageStart, obj.pchCommand, obj.nMessageSize, obj.pchChecksum); }
 
     MessageStartChars pchMessageStart{};
-    char m_msg_type[MESSAGE_TYPE_SIZE]{};
+    char pchCommand[COMMAND_SIZE]{};
     uint32_t nMessageSize{std::numeric_limits<uint32_t>::max()};
     uint8_t pchChecksum[CHECKSUM_SIZE]{};
 };
 
 /**
- * Bitcoin protocol message types. When adding new message types, don't forget
+ * Briskcoin protocol message types. When adding new message types, don't forget
  * to update ALL_NET_MESSAGE_TYPES below.
  */
 namespace NetMsgType {
@@ -311,7 +311,7 @@ enum ServiceFlags : uint64_t {
     // Nothing
     NODE_NONE = 0,
     // NODE_NETWORK means that the node is capable of serving the complete block chain. It is currently
-    // set by all Bitcoin Core non pruned nodes, and is unset by SPV clients or other light clients.
+    // set by all Briskcoin Core non pruned nodes, and is unset by SPV clients or other light clients.
     NODE_NETWORK = (1 << 0),
     // NODE_BLOOM means the node is capable and willing to handle bloom-filtered connections.
     NODE_BLOOM = (1 << 2),
@@ -331,7 +331,7 @@ enum ServiceFlags : uint64_t {
 
     // Bits 24-31 are reserved for temporary experiments. Just pick a bit that
     // isn't getting used, or one not being used much, and notify the
-    // bitcoin-development mailing list. Remember that service bits are just
+    // briskcoin-development mailing list. Remember that service bits are just
     // unauthenticated advertisements, so your code must be robust against
     // collisions and other cases where nodes may be advertising a service they
     // do not actually support. Other service bits should be allocated via the
@@ -500,7 +500,7 @@ public:
 
     friend bool operator<(const CInv& a, const CInv& b);
 
-    std::string GetMessageType() const;
+    std::string GetCommand() const;
     std::string ToString() const;
 
     // Single-message helper methods
@@ -528,4 +528,4 @@ public:
 /** Convert a TX/WITNESS_TX/WTX CInv to a GenTxid. */
 GenTxid ToGenTxid(const CInv& inv);
 
-#endif // BITCOIN_PROTOCOL_H
+#endif // BRISKCOIN_PROTOCOL_H

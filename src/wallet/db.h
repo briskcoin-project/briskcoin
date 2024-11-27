@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Bitcoin Core developers
+// Copyright (c) 2009-2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_WALLET_DB_H
-#define BITCOIN_WALLET_DB_H
+#ifndef BRISKCOIN_WALLET_DB_H
+#define BRISKCOIN_WALLET_DB_H
 
 #include <clientversion.h>
 #include <streams.h>
@@ -122,7 +122,6 @@ public:
     virtual bool TxnBegin() = 0;
     virtual bool TxnCommit() = 0;
     virtual bool TxnAbort() = 0;
-    virtual bool HasActiveTxn() = 0;
 };
 
 /** An instance of this class represents one database.
@@ -228,4 +227,4 @@ bool IsBDBFile(const fs::path& path);
 bool IsSQLiteFile(const fs::path& path);
 } // namespace wallet
 
-#endif // BITCOIN_WALLET_DB_H
+#endif // BRISKCOIN_WALLET_DB_H

@@ -1,10 +1,10 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Bitcoin Core developers
+// Copyright (c) 2009-2021 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_RPC_SERVER_H
-#define BITCOIN_RPC_SERVER_H
+#ifndef BRISKCOIN_RPC_SERVER_H
+#define BRISKCOIN_RPC_SERVER_H
 
 #include <rpc/request.h>
 #include <rpc/util.h>
@@ -17,6 +17,12 @@
 #include <univalue.h>
 
 class CRPCCommand;
+
+namespace RPCServer
+{
+    void OnStarted(std::function<void ()> slot);
+    void OnStopped(std::function<void ()> slot);
+}
 
 /** Query whether RPC is running */
 bool IsRPCRunning();
@@ -175,4 +181,4 @@ void InterruptRPC();
 void StopRPC();
 UniValue JSONRPCExec(const JSONRPCRequest& jreq, bool catch_errors);
 
-#endif // BITCOIN_RPC_SERVER_H
+#endif // BRISKCOIN_RPC_SERVER_H

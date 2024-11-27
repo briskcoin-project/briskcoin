@@ -1,25 +1,17 @@
-// Copyright (c) 2016-2022 The Bitcoin Core developers
+// Copyright (c) 2016-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
-#include <bench/data/block413567.raw.h>
-#include <chain.h>
-#include <core_io.h>
-#include <primitives/block.h>
-#include <primitives/transaction.h>
+#include <bench/data.h>
+
 #include <rpc/blockchain.h>
-#include <serialize.h>
-#include <span.h>
 #include <streams.h>
 #include <test/util/setup_common.h>
-#include <uint256.h>
-#include <univalue.h>
+#include <util/chaintype.h>
 #include <validation.h>
 
-#include <cstddef>
-#include <memory>
-#include <vector>
+#include <univalue.h>
 
 namespace {
 

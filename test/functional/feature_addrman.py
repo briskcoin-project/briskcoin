@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2021-2022 The Bitcoin Core developers
+# Copyright (c) 2021-2022 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test addrman functionality"""
@@ -9,7 +9,7 @@ import re
 
 from test_framework.messages import ser_uint256, hash256, MAGIC_BYTES
 from test_framework.netutil import ADDRMAN_NEW_BUCKET_COUNT, ADDRMAN_TRIED_BUCKET_COUNT, ADDRMAN_BUCKET_SIZE
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.test_node import ErrorMatch
 from test_framework.util import assert_equal
 
@@ -46,7 +46,7 @@ def write_addrman(peers_dat, **kwargs):
         f.write(serialize_addrman(**kwargs))
 
 
-class AddrmanTest(BitcoinTestFramework):
+class AddrmanTest(BriskcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 1
 
@@ -54,7 +54,7 @@ class AddrmanTest(BitcoinTestFramework):
         peers_dat = os.path.join(self.nodes[0].chain_path, "peers.dat")
         init_error = lambda reason: (
             f"Error: Invalid or corrupt peers.dat \\({reason}\\). If you believe this "
-            f"is a bug, please report it to {self.config['environment']['CLIENT_BUGREPORT']}. "
+            f"is a bug, please report it to {self.config['environment']['PACKAGE_BUGREPORT']}. "
             f'As a workaround, you can move the file \\("{re.escape(peers_dat)}"\\) out of the way \\(rename, '
             "move, or delete\\) to have a new one created on the next start."
         )

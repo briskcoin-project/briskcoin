@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2023 The Bitcoin Core developers
+# Copyright (c) 2023 The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test sigop limit mempool policy (`-bytespersigop` parameter)"""
@@ -29,7 +29,7 @@ from test_framework.script_util import (
     keys_to_multisig_script,
     script_to_p2wsh_script,
 )
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import BriskcoinTestFramework
 from test_framework.util import (
     assert_equal,
     assert_greater_than,
@@ -41,7 +41,7 @@ from test_framework.wallet_util import generate_keypair
 DEFAULT_BYTES_PER_SIGOP = 20  # default setting
 MAX_PUBKEYS_PER_MULTISIG = 20
 
-class BytesPerSigOpTest(BitcoinTestFramework):
+class BytesPerSigOpTest(BriskcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 1
         # allow large datacarrier output to pad transactions
@@ -154,7 +154,7 @@ class BytesPerSigOpTest(BitcoinTestFramework):
             return (tx_utxo, tx)
 
         tx_parent_utxo, tx_parent = create_bare_multisig_tx()
-        _tx_child_utxo, tx_child = create_bare_multisig_tx(tx_parent_utxo)
+        tx_child_utxo, tx_child = create_bare_multisig_tx(tx_parent_utxo)
 
         # Separately, the parent tx is ok
         parent_individual_testres = self.nodes[0].testmempoolaccept([tx_parent.serialize().hex()])[0]

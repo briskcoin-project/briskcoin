@@ -1,15 +1,15 @@
-// Copyright (c) 2023-present The Bitcoin Core developers
+// Copyright (c) 2023 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <test/util/json.h>
 
-#include <univalue.h>
+#include <string>
 #include <util/check.h>
 
-#include <string_view>
+#include <univalue.h>
 
-UniValue read_json(std::string_view jsondata)
+UniValue read_json(const std::string& jsondata)
 {
     UniValue v;
     Assert(v.read(jsondata) && v.isArray());

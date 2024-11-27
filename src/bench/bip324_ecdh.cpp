@@ -1,14 +1,14 @@
-// Copyright (c) 2022 The Bitcoin Core developers
+// Copyright (c) 2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
+
 #include <key.h>
 #include <pubkey.h>
 #include <random.h>
 #include <span.h>
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 

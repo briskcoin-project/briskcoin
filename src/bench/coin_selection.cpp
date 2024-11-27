@@ -1,30 +1,17 @@
-// Copyright (c) 2012-2022 The Bitcoin Core developers
+// Copyright (c) 2012-2022 The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
-#include <consensus/amount.h>
 #include <interfaces/chain.h>
 #include <node/context.h>
-#include <outputtype.h>
-#include <policy/feerate.h>
 #include <policy/policy.h>
-#include <primitives/transaction.h>
-#include <random.h>
-#include <sync.h>
-#include <util/result.h>
 #include <wallet/coinselection.h>
 #include <wallet/spend.h>
-#include <wallet/test/util.h>
-#include <wallet/transaction.h>
 #include <wallet/wallet.h>
+#include <wallet/test/util.h>
 
-#include <cassert>
-#include <map>
-#include <memory>
 #include <set>
-#include <utility>
-#include <vector>
 
 using node::NodeContext;
 using wallet::AttemptSelection;
@@ -55,7 +42,7 @@ static void addCoin(const CAmount& nValue, const CWallet& wallet, std::vector<st
 // the hardest, as you need a wider selection of scenarios, just testing the
 // same one over and over isn't too useful. Generating random isn't useful
 // either for measurements."
-// (https://github.com/bitcoin/bitcoin/issues/7883#issuecomment-224807484)
+// (https://github.com/briskcoin/briskcoin/issues/7883#issuecomment-224807484)
 static void CoinSelection(benchmark::Bench& bench)
 {
     NodeContext node;
