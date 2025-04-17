@@ -14,7 +14,7 @@
 #include <QDialog>
 #include <QString>
 
-#include <config/briskcoin-config.h> // IWYU pragma: keep
+#include <briskcoin-build-config.h> // IWYU pragma: keep
 
 ReceiveRequestDialog::ReceiveRequestDialog(QWidget* parent)
     : QDialog(parent, GUIUtil::dialog_flags),

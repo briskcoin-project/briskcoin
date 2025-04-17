@@ -2,7 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <config/briskcoin-config.h> // IWYU pragma: keep
+#include <briskcoin-build-config.h> // IWYU pragma: keep
 
 #include <crypto/sha256.h>
 #include <crypto/common.h>

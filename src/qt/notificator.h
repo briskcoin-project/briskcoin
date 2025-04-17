@@ -5,7 +5,7 @@
 #ifndef BRISKCOIN_QT_NOTIFICATOR_H
 #define BRISKCOIN_QT_NOTIFICATOR_H
 
-#include <config/briskcoin-config.h> // IWYU pragma: keep
+#include <briskcoin-build-config.h> // IWYU pragma: keep
 
 #include <QIcon>
 #include <QObject>

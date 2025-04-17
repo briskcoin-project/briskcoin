@@ -55,8 +55,8 @@ QString BriskcoinUnits::description(Unit unit)
     switch (unit) {
     case Unit::BKC: return QString("Briskcoins");
     case Unit::mBKC: return QString("mBKC (1 / 1" THIN_SP_UTF8 "000)");
-    case Unit::uBKC: return QString("µBKC (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
-    case Unit::SAT: return QString("sBKC (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+    case Unit::uBKC: return QString("µBKC (bits) (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+    case Unit::SAT: return QString("sBKC (sat) (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
     } // no default case, so the compiler can warn about missing cases
     assert(false);
 }
@@ -166,7 +166,7 @@ bool BriskcoinUnits::parse(Unit unit, const QString& value, CAmount* val_out)
     {
         return false; // More than one dot
     }
-    QString whole = parts[0];
+    const QString& whole = parts[0];
     QString decimals;
 
     if(parts.size() > 1)

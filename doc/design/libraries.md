@@ -4,11 +4,11 @@
 |--------------------------|-------------|
 | *libbriskcoin_cli*         | RPC client functionality used by *briskcoin-cli* executable |
 | *libbriskcoin_common*      | Home for common functionality shared by different executables and libraries. Similar to *libbriskcoin_util*, but higher-level (see [Dependencies](#dependencies)). |
-| *libbriskcoin_consensus*   | Stable, backwards-compatible consensus functionality used by *libbriskcoin_node* and *libbriskcoin_wallet*. |
+| *libbriskcoin_consensus*   | Consensus functionality used by *libbriskcoin_node* and *libbriskcoin_wallet*. |
 | *libbriskcoin_crypto*      | Hardware-optimized functions for data encryption, hashing, message authentication, and key derivation. |
 | *libbriskcoin_kernel*      | Consensus engine and support library used for validation by *libbriskcoin_node*. |
 | *libbriskcoinqt*           | GUI functionality used by *briskcoin-qt* and *briskcoin-gui* executables. |
-| *libbriskcoin_ipc*         | IPC functionality used by *briskcoin-node*, *briskcoin-wallet*, *briskcoin-gui* executables to communicate when [`--enable-multiprocess`](multiprocess.md) is used. |
+| *libbriskcoin_ipc*         | IPC functionality used by *briskcoin-node*, *briskcoin-wallet*, *briskcoin-gui* executables to communicate when [`-DWITH_MULTIPROCESS=ON`](multiprocess.md) is used. |
 | *libbriskcoin_node*        | P2P and RPC server functionality used by *briskcoind* and *briskcoin-qt* executables. |
 | *libbriskcoin_util*        | Home for common functionality shared by different executables and libraries. Similar to *libbriskcoin_common*, but lower-level (see [Dependencies](#dependencies)). |
 | *libbriskcoin_wallet*      | Wallet functionality used by *briskcoind* and *briskcoin-wallet* executables. |
@@ -19,7 +19,7 @@
 
 - Most libraries are internal libraries and have APIs which are completely unstable! There are few or no restrictions on backwards compatibility or rules about external dependencies. An exception is *libbriskcoin_kernel*, which, at some future point, will have a documented external interface.
 
-- Generally each library should have a corresponding source directory and namespace. Source code organization is a work in progress, so it is true that some namespaces are applied inconsistently, and if you look at [`libbriskcoin_*_SOURCES`](../../src/Makefile.am) lists you can see that many libraries pull in files from outside their source directory. But when working with libraries, it is good to follow a consistent pattern like:
+- Generally each library should have a corresponding source directory and namespace. Source code organization is a work in progress, so it is true that some namespaces are applied inconsistently, and if you look at [`add_library(briskcoin_* ...)`](../../src/CMakeLists.txt) lists you can see that many libraries pull in files from outside their source directory. But when working with libraries, it is good to follow a consistent pattern like:
 
   - *libbriskcoin_node* code lives in `src/node/` in the `node::` namespace
   - *libbriskcoin_wallet* code lives in `src/wallet/` in the `wallet::` namespace
@@ -103,7 +103,7 @@ class briskcoin-qt,briskcoind,briskcoin-cli,briskcoin-wallet bold
 
 - *libbriskcoin_kernel* should only depend on *libbriskcoin_util*, *libbriskcoin_consensus*, and *libbriskcoin_crypto*.
 
-- The only thing that should depend on *libbriskcoin_kernel* internally should be *libbriskcoin_node*. GUI and wallet libraries *libbriskcoinqt* and *libbriskcoin_wallet* in particular should not depend on *libbriskcoin_kernel* and the unneeded functionality it would pull in, like block validation. To the extent that GUI and wallet code need scripting and signing functionality, they should be get able it from *libbriskcoin_consensus*, *libbriskcoin_common*, *libbriskcoin_crypto*, and *libbriskcoin_util*, instead of *libbriskcoin_kernel*.
+- The only thing that should depend on *libbriskcoin_kernel* internally should be *libbriskcoin_node*. GUI and wallet libraries *libbriskcoinqt* and *libbriskcoin_wallet* in particular should not depend on *libbriskcoin_kernel* and the unneeded functionality it would pull in, like block validation. To the extent that GUI and wallet code need scripting and signing functionality, they should be able to get it from *libbriskcoin_consensus*, *libbriskcoin_common*, *libbriskcoin_crypto*, and *libbriskcoin_util*, instead of *libbriskcoin_kernel*.
 
 - GUI, node, and wallet code internal implementations should all be independent of each other, and the *libbriskcoinqt*, *libbriskcoin_node*, *libbriskcoin_wallet* libraries should never reference each other's symbols. They should only call each other through [`src/interfaces/`](../../src/interfaces/) abstract interfaces.
 
