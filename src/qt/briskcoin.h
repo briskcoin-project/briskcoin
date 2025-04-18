@@ -5,7 +5,7 @@
 #ifndef BRISKCOIN_QT_BRISKCOIN_H
 #define BRISKCOIN_QT_BRISKCOIN_H
 
-#include <config/briskcoin-config.h> // IWYU pragma: keep
+#include <briskcoin-build-config.h> // IWYU pragma: keep
 
 #include <interfaces/node.h>
 #include <qt/initexecutor.h>

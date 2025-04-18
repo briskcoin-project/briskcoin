@@ -24,13 +24,16 @@ user inputs. Such environments include the Python3 command line interpreter or
 
 ## 2. Importing `TestShell` from the Briskcoin Core repository
 
-We can import the `TestShell` by adding the path of the Briskcoin Core
+We can import the `TestShell` by adding the path of the configured Briskcoin Core
 `test_framework` module to the beginning of the PATH variable, and then
-importing the `TestShell` class from the `test_shell` sub-package.
+importing the `TestShell` class from the `test_shell` sub-package. Since
+the build system creates a copy of the `test_framework` module into a new `build/`
+directory along with the required configuration file, the path to the build copy
+must be used.
 
 ```
 >>> import sys
->>> sys.path.insert(0, "/path/to/briskcoin/test/functional")
+>>> sys.path.insert(0, "/path/to/briskcoin/build/test/functional")
 >>> from test_framework.test_shell import TestShell
 ```
 
@@ -155,7 +158,7 @@ To prevent the logs from being removed after a shutdown, simply set the
 The following utility consolidates logs from the briskcoind nodes and the
 underlying `BriskcoinTestFramework`:
 
-* `/path/to/briskcoin/test/functional/combine_logs.py
+* `/path/to/briskcoin/build/test/functional/combine_logs.py
   '/path/to/briskcoin_func_test_XXXXXXX'`
 
 ## 6. Custom `TestShell` parameters
@@ -170,9 +173,9 @@ can be called after the TestShell is shut down.
 | Test parameter key | Default Value | Description |
 |---|---|---|
 | `bind_to_localhost_only` | `True` | Binds briskcoind P2P services to `127.0.0.1` if set to `True`.|
-| `cachedir` | `"/path/to/briskcoin/test/cache"` | Sets the briskcoind datadir directory. |
+| `cachedir` | `"/path/to/briskcoin/build/test/cache"` | Sets the briskcoind datadir directory. |
 | `chain`  | `"regtest"` | Sets the chain-type for the underlying test briskcoind processes. |
-| `configfile` | `"/path/to/briskcoin/test/config.ini"` | Sets the location of the test framework config file. |
+| `configfile` | `"/path/to/briskcoin/build/test/config.ini"` | Sets the location of the test framework config file. |
 | `coveragedir` | `None` | Records briskcoind RPC test coverage into this directory if set. |
 | `loglevel` | `INFO` | Logs events at this level and higher. Can be set to `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`. |
 | `nocleanup` | `False` | Cleans up temporary test directory if set to `True` during `shutdown`. |

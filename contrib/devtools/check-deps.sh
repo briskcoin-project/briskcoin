@@ -8,11 +8,10 @@ declare -A LIBS
 LIBS[cli]="libbriskcoin_cli.a"
 LIBS[common]="libbriskcoin_common.a"
 LIBS[consensus]="libbriskcoin_consensus.a"
-LIBS[crypto]="crypto/.libs/libbriskcoin_crypto_base.a crypto/.libs/libbriskcoin_crypto_x86_shani.a crypto/.libs/libbriskcoin_crypto_sse41.a crypto/.libs/libbriskcoin_crypto_avx2.a"
+LIBS[crypto]="libbriskcoin_crypto.a"
 LIBS[node]="libbriskcoin_node.a"
 LIBS[util]="libbriskcoin_util.a"
 LIBS[wallet]="libbriskcoin_wallet.a"
-LIBS[wallet_tool]="libbriskcoin_wallet_tool.a"
 
 # Declare allowed dependencies "X Y" where X is allowed to depend on Y. This
 # list is taken from doc/design/libraries.md.
@@ -32,43 +31,38 @@ ALLOWED_DEPENDENCIES=(
     "wallet common"
     "wallet crypto"
     "wallet util"
-    "wallet_tool util"
-    "wallet_tool wallet"
 )
 
 # Add minor dependencies omitted from doc/design/libraries.md to keep the
 # dependency diagram simple.
 ALLOWED_DEPENDENCIES+=(
     "wallet consensus"
-    "wallet_tool common"
-    "wallet_tool crypto"
 )
 
 # Declare list of known errors that should be suppressed.
 declare -A SUPPRESS
 # init.cpp file currently calls Berkeley DB sanity check function on startup, so
 # there is an undocumented dependency of the node library on the wallet library.
-SUPPRESS["libbriskcoin_node_a-init.o libbriskcoin_wallet_a-bdb.o _ZN6wallet27BerkeleyDatabaseSanityCheckEv"]=1
+SUPPRESS["init.cpp.o bdb.cpp.o _ZN6wallet27BerkeleyDatabaseSanityCheckEv"]=1
 # init/common.cpp file calls InitError and InitWarning from interface_ui which
 # is currently part of the node library. interface_ui should just be part of the
 # common library instead, and is moved in
 # https://github.com/briskcoin/briskcoin/issues/10102
-SUPPRESS["libbriskcoin_common_a-common.o libbriskcoin_node_a-interface_ui.o _Z11InitWarningRK13bilingual_str"]=1
-SUPPRESS["libbriskcoin_common_a-common.o libbriskcoin_node_a-interface_ui.o _Z9InitErrorRK13bilingual_str"]=1
-# rpc/external_signer.cpp adds defines node RPC methods but is built as part of the
-# common library. It should be moved to the node library instead.
-SUPPRESS["libbriskcoin_common_a-external_signer.o libbriskcoin_node_a-server.o _ZN9CRPCTable13appendCommandERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPK11CRPCCommand"]=1
+SUPPRESS["common.cpp.o interface_ui.cpp.o _Z11InitWarningRK13bilingual_str"]=1
+SUPPRESS["common.cpp.o interface_ui.cpp.o _Z9InitErrorRK13bilingual_str"]=1
 
 usage() {
    echo "Usage: $(basename "${BASH_SOURCE[0]}") [BUILD_DIR]"
 }
 
-# Output makefile targets, converting library .a paths to libtool .la targets
+# Output makefile targets, converting library .a paths to CMake targets
 lib_targets() {
   for lib in "${!LIBS[@]}"; do
       for lib_path in ${LIBS[$lib]}; do
-          # shellcheck disable=SC2001
-          sed 's:/.libs/\(.*\)\.a$:/\1.la:g' <<<"$lib_path"
+          local name="${lib_path##*/}"
+          name="${name#lib}"
+          name="${name%.a}"
+          echo "$name"
       done
   done
 }
@@ -78,8 +72,8 @@ extract_symbols() {
     local temp_dir="$1"
     for lib in "${!LIBS[@]}"; do
         for lib_path in ${LIBS[$lib]}; do
-            nm -o "$lib_path" | grep ' T ' | awk '{print $3, $1}' >> "${temp_dir}/${lib}_exports.txt"
-            nm -o "$lib_path" | grep ' U ' | awk '{print $3, $1}' >> "${temp_dir}/${lib}_imports.txt"
+            nm -o "$lib_path" | { grep ' T \| W ' || true; } | awk '{print $3, $1}' >> "${temp_dir}/${lib}_exports.txt"
+            nm -o "$lib_path" | { grep ' U ' || true; } | awk '{print $3, $1}' >> "${temp_dir}/${lib}_imports.txt"
             awk '{print $1}' "${temp_dir}/${lib}_exports.txt" | sort -u > "${temp_dir}/${lib}_exported_symbols.txt"
             awk '{print $1}' "${temp_dir}/${lib}_imports.txt" | sort -u > "${temp_dir}/${lib}_imported_symbols.txt"
         done
@@ -136,7 +130,7 @@ check_disallowed() {
         dst_obj=$(obj_names "$symbol" "${temp_dir}/${dst}_exports.txt")
         while read src_obj; do
             if ! check_suppress "$src_obj" "$dst_obj" "$symbol"; then
-                echo "Error: $src_obj depends on $dst_obj symbol '$(c++filt "$symbol")', can suppess with:"
+                echo "Error: $src_obj depends on $dst_obj symbol '$(c++filt "$symbol")', can suppress with:"
                 echo "    SUPPRESS[\"$src_obj $dst_obj $symbol\"]=1"
                 result=1
             fi
@@ -148,7 +142,7 @@ check_disallowed() {
 # Declare array to track errors which were suppressed.
 declare -A SUPPRESSED
 
-# Return whether error should be suppressed and record suppresssion in
+# Return whether error should be suppressed and record suppression in
 # SUPPRESSED array.
 check_suppress() {
     local src_obj="$1"
@@ -164,7 +158,7 @@ check_suppress() {
     return 1
 }
 
-# Warn about error which were supposed to be suppress, but were not encountered.
+# Warn about error which were supposed to be suppressed, but were not encountered.
 check_not_suppressed() {
     for suppress in "${!SUPPRESS[@]}"; do
         if [[ ! -v SUPPRESSED[$suppress] ]]; then
@@ -175,7 +169,7 @@ check_not_suppressed() {
 
 # Check arguments.
 if [ "$#" = 0 ]; then
-    BUILD_DIR="$(dirname "${BASH_SOURCE[0]}")/../../src"
+    BUILD_DIR="$(dirname "${BASH_SOURCE[0]}")/../../build"
 elif [ "$#" = 1 ]; then
     BUILD_DIR="$1"
 else
@@ -190,14 +184,17 @@ if [ ! -f "$BUILD_DIR/Makefile" ]; then
 fi
 
 # Build libraries and run checks.
-cd "$BUILD_DIR"
 # shellcheck disable=SC2046
-make -j"$(nproc)" $(lib_targets)
+cmake --build "$BUILD_DIR" -j"$(nproc)" -t $(lib_targets)
 TEMP_DIR="$(mktemp -d)"
+cd "$BUILD_DIR/lib"
 extract_symbols "$TEMP_DIR"
 if check_libraries "$TEMP_DIR"; then
     echo "Success! No unexpected dependencies were detected."
+    RET=0
 else
     echo >&2 "Error: Unexpected dependencies were detected. Check previous output."
+    RET=1
 fi
 rm -r "$TEMP_DIR"
+exit $RET

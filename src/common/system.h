@@ -6,7 +6,7 @@
 #ifndef BRISKCOIN_COMMON_SYSTEM_H
 #define BRISKCOIN_COMMON_SYSTEM_H
 
-#include <config/briskcoin-config.h> // IWYU pragma: keep
+#include <briskcoin-build-config.h> // IWYU pragma: keep
 
 #include <cstdint>
 #include <string>

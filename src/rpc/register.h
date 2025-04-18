@@ -5,7 +5,7 @@
 #ifndef BRISKCOIN_RPC_REGISTER_H
 #define BRISKCOIN_RPC_REGISTER_H
 
-#include <config/briskcoin-config.h> // IWYU pragma: keep
+#include <briskcoin-build-config.h> // IWYU pragma: keep
 
 /** These are in one header file to avoid creating tons of single-function
  * headers for everything under src/rpc/ */

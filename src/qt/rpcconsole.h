@@ -5,7 +5,7 @@
 #ifndef BRISKCOIN_QT_RPCCONSOLE_H
 #define BRISKCOIN_QT_RPCCONSOLE_H
 
-#include <config/briskcoin-config.h> // IWYU pragma: keep
+#include <briskcoin-build-config.h> // IWYU pragma: keep
 
 #include <qt/clientmodel.h>
 #include <qt/guiutil.h>
