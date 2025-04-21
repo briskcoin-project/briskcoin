@@ -62,8 +62,8 @@ Credits
 
 Thanks to everyone who directly contributed to this release:
 
-BKC developers
-BTC developers
+* BKC developers
+* BTC developers
 
 
 
