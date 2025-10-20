@@ -9,6 +9,7 @@ import tempfile
 import argparse
 
 BINARIES = [
+'bin/briskcoin',
 'bin/briskcoind',
 'bin/briskcoin-cli',
 'bin/briskcoin-tx',

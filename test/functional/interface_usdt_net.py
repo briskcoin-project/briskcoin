@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2022 The Briskcoin Core developers
+# Copyright (c) 2022-present The Briskcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,7 +17,11 @@ except ImportError:
 from test_framework.messages import CBlockHeader, MAX_HEADERS_RESULTS, msg_headers, msg_version
 from test_framework.p2p import P2PInterface
 from test_framework.test_framework import BriskcoinTestFramework
-from test_framework.util import assert_equal
+from test_framework.util import (
+    assert_equal,
+    assert_greater_than,
+    bpf_cflags,
+)
 
 # Tor v3 addresses are 62 chars + 6 chars for the port (':12345').
 MAX_PEER_ADDR_LENGTH = 68
@@ -250,6 +254,7 @@ class NetTracepointTest(BriskcoinTestFramework):
         self.skip_if_no_briskcoind_tracepoints()
         self.skip_if_no_python_bcc()
         self.skip_if_no_bpf_permissions()
+        self.skip_if_running_under_valgrind()
 
     def run_test(self):
         self.p2p_message_tracepoint_test()
@@ -283,7 +288,7 @@ class NetTracepointTest(BriskcoinTestFramework):
                          fn_name="trace_inbound_message")
         ctx.enable_probe(probe="net:outbound_message",
                          fn_name="trace_outbound_message")
-        bpf = BPF(text=net_tracepoints_program, usdt_contexts=[ctx], debug=0, cflags=["-Wno-error=implicit-function-declaration"])
+        bpf = BPF(text=net_tracepoints_program, usdt_contexts=[ctx], debug=0, cflags=bpf_cflags())
 
         EXPECTED_INOUTBOUND_VERSION_MSG = 1
         checked_inbound_version_msg = 0
@@ -341,7 +346,7 @@ class NetTracepointTest(BriskcoinTestFramework):
         ctx = USDT(pid=self.nodes[0].process.pid)
         ctx.enable_probe(probe="net:inbound_connection",
                          fn_name="trace_inbound_connection")
-        bpf = BPF(text=net_tracepoints_program, usdt_contexts=[ctx], debug=0, cflags=["-Wno-error=implicit-function-declaration"])
+        bpf = BPF(text=net_tracepoints_program, usdt_contexts=[ctx], debug=0, cflags=bpf_cflags())
 
         inbound_connections = []
         EXPECTED_INBOUND_CONNECTIONS = 2
@@ -364,8 +369,8 @@ class NetTracepointTest(BriskcoinTestFramework):
 
         assert_equal(EXPECTED_INBOUND_CONNECTIONS, len(inbound_connections))
         for inbound_connection in inbound_connections:
-            assert inbound_connection.conn.id > 0
-            assert inbound_connection.existing > 0
+            assert_greater_than(inbound_connection.conn.id, 0)
+            assert_greater_than(inbound_connection.existing, 0)
             assert_equal(b'inbound', inbound_connection.conn.conn_type)
             assert_equal(NETWORK_TYPE_UNROUTABLE, inbound_connection.conn.network)
 
@@ -378,7 +383,7 @@ class NetTracepointTest(BriskcoinTestFramework):
         ctx = USDT(pid=self.nodes[0].process.pid)
         ctx.enable_probe(probe="net:outbound_connection",
                          fn_name="trace_outbound_connection")
-        bpf = BPF(text=net_tracepoints_program, usdt_contexts=[ctx], debug=0, cflags=["-Wno-error=implicit-function-declaration"])
+        bpf = BPF(text=net_tracepoints_program, usdt_contexts=[ctx], debug=0, cflags=bpf_cflags())
 
         # that the handle_* function succeeds.
         EXPECTED_OUTBOUND_CONNECTIONS = 2
@@ -405,8 +410,8 @@ class NetTracepointTest(BriskcoinTestFramework):
 
         assert_equal(EXPECTED_OUTBOUND_CONNECTIONS, len(outbound_connections))
         for outbound_connection in outbound_connections:
-            assert outbound_connection.conn.id > 0
-            assert outbound_connection.existing > 0
+            assert_greater_than(outbound_connection.conn.id, 0)
+            assert_greater_than(outbound_connection.existing, 0)
             assert_equal(EXPECTED_CONNECTION_TYPE, outbound_connection.conn.conn_type.decode('utf-8'))
             assert_equal(NETWORK_TYPE_UNROUTABLE, outbound_connection.conn.network)
 
@@ -419,7 +424,7 @@ class NetTracepointTest(BriskcoinTestFramework):
         ctx = USDT(pid=self.nodes[0].process.pid)
         ctx.enable_probe(probe="net:evicted_inbound_connection",
                          fn_name="trace_evicted_inbound_connection")
-        bpf = BPF(text=net_tracepoints_program, usdt_contexts=[ctx], debug=0, cflags=["-Wno-error=implicit-function-declaration"])
+        bpf = BPF(text=net_tracepoints_program, usdt_contexts=[ctx], debug=0, cflags=bpf_cflags())
 
         EXPECTED_EVICTED_CONNECTIONS = 2
         evicted_connections = []
@@ -442,8 +447,8 @@ class NetTracepointTest(BriskcoinTestFramework):
 
         assert_equal(EXPECTED_EVICTED_CONNECTIONS, len(evicted_connections))
         for evicted_connection in evicted_connections:
-            assert evicted_connection.conn.id > 0
-            assert evicted_connection.time_established > 0
+            assert_greater_than(evicted_connection.conn.id, 0)
+            assert_greater_than(evicted_connection.time_established, 0)
             assert_equal("inbound", evicted_connection.conn.conn_type.decode('utf-8'))
             assert_equal(NETWORK_TYPE_UNROUTABLE, evicted_connection.conn.network)
 
@@ -456,7 +461,7 @@ class NetTracepointTest(BriskcoinTestFramework):
         ctx = USDT(pid=self.nodes[0].process.pid)
         ctx.enable_probe(probe="net:misbehaving_connection",
                          fn_name="trace_misbehaving_connection")
-        bpf = BPF(text=net_tracepoints_program, usdt_contexts=[ctx], debug=0, cflags=["-Wno-error=implicit-function-declaration"])
+        bpf = BPF(text=net_tracepoints_program, usdt_contexts=[ctx], debug=0, cflags=bpf_cflags())
 
         EXPECTED_MISBEHAVING_CONNECTIONS = 2
         misbehaving_connections = []
@@ -473,15 +478,15 @@ class NetTracepointTest(BriskcoinTestFramework):
         for _ in range(EXPECTED_MISBEHAVING_CONNECTIONS):
             testnode = P2PInterface()
             self.nodes[0].add_p2p_connection(testnode)
-            testnode.send_message(msg)
+            testnode.send_without_ping(msg)
             bpf.perf_buffer_poll(timeout=500)
             testnode.peer_disconnect()
 
         assert_equal(EXPECTED_MISBEHAVING_CONNECTIONS, len(misbehaving_connections))
         for misbehaving_connection in misbehaving_connections:
-            assert misbehaving_connection.id > 0
-            assert len(misbehaving_connection.message) > 0
-            assert misbehaving_connection.message == b"headers message size = 2001"
+            assert_greater_than(misbehaving_connection.id, 0)
+            assert_greater_than(len(misbehaving_connection.message), 0)
+            assert_equal(misbehaving_connection.message, b"headers message size = 2001")
 
         bpf.cleanup()
 
@@ -490,7 +495,7 @@ class NetTracepointTest(BriskcoinTestFramework):
         ctx = USDT(pid=self.nodes[0].process.pid)
         ctx.enable_probe(probe="net:closed_connection",
                          fn_name="trace_closed_connection")
-        bpf = BPF(text=net_tracepoints_program, usdt_contexts=[ctx], debug=0, cflags=["-Wno-error=implicit-function-declaration"])
+        bpf = BPF(text=net_tracepoints_program, usdt_contexts=[ctx], debug=0, cflags=bpf_cflags())
 
         EXPECTED_CLOSED_CONNECTIONS = 2
         closed_connections = []
@@ -516,10 +521,10 @@ class NetTracepointTest(BriskcoinTestFramework):
 
         assert_equal(EXPECTED_CLOSED_CONNECTIONS, len(closed_connections))
         for closed_connection in closed_connections:
-            assert closed_connection.conn.id > 0
+            assert_greater_than(closed_connection.conn.id, 0)
             assert_equal("inbound", closed_connection.conn.conn_type.decode('utf-8'))
             assert_equal(0, closed_connection.conn.network)
-            assert closed_connection.time_established > 0
+            assert_greater_than(closed_connection.time_established, 0)
 
         bpf.cleanup()
 

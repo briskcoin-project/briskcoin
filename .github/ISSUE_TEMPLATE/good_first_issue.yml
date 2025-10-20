@@ -28,7 +28,7 @@ body:
     id: useful-skills
     attributes:
       label: Useful Skills
-      description: For example, “`std::thread`”, “Qt5 GUI and async GUI design” or “basic understanding of Briskcoin mining and the Briskcoin Core RPC interface”.
+      description: For example, “`std::thread`”, “Qt6 GUI and async GUI design” or “basic understanding of Briskcoin mining and the Briskcoin Core RPC interface”.
       value: |
         * Compiling Briskcoin Core from source
         * Running the C++ unit tests and the Python functional tests

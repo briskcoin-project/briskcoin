@@ -19,11 +19,11 @@ function(setup_split_debug_script)
 endfunction()
 
 function(add_maintenance_targets)
-  if(NOT PYTHON_COMMAND)
+  if(NOT TARGET Python3::Interpreter)
     return()
   endif()
 
-  foreach(target IN ITEMS briskcoind briskcoin-qt briskcoin-cli briskcoin-tx briskcoin-util briskcoin-wallet test_briskcoin bench_briskcoin)
+  foreach(target IN ITEMS briskcoin briskcoind briskcoin-node briskcoin-qt briskcoin-gui briskcoin-cli briskcoin-tx briskcoin-util briskcoin-wallet test_briskcoin bench_briskcoin)
     if(TARGET ${target})
       list(APPEND executables $<TARGET_FILE:${target}>)
     endif()
@@ -31,19 +31,27 @@ function(add_maintenance_targets)
 
   add_custom_target(check-symbols
     COMMAND ${CMAKE_COMMAND} -E echo "Running symbol and dynamic library checks..."
-    COMMAND ${PYTHON_COMMAND} ${PROJECT_SOURCE_DIR}/contrib/devtools/symbol-check.py ${executables}
+    COMMAND Python3::Interpreter ${PROJECT_SOURCE_DIR}/contrib/guix/symbol-check.py ${executables}
     VERBATIM
   )
 
   add_custom_target(check-security
     COMMAND ${CMAKE_COMMAND} -E echo "Checking binary security..."
-    COMMAND ${PYTHON_COMMAND} ${PROJECT_SOURCE_DIR}/contrib/devtools/security-check.py ${executables}
+    COMMAND Python3::Interpreter ${PROJECT_SOURCE_DIR}/contrib/guix/security-check.py ${executables}
     VERBATIM
   )
 endfunction()
 
 function(add_windows_deploy_target)
-  if(MINGW AND TARGET briskcoin-qt AND TARGET briskcoind AND TARGET briskcoin-cli AND TARGET briskcoin-tx AND TARGET briskcoin-wallet AND TARGET briskcoin-util AND TARGET test_briskcoin)
+  if(MINGW AND TARGET briskcoin AND TARGET briskcoin-qt AND TARGET briskcoind AND TARGET briskcoin-cli AND TARGET briskcoin-tx AND TARGET briskcoin-wallet AND TARGET briskcoin-util AND TARGET test_briskcoin)
+    find_program(MAKENSIS_EXECUTABLE makensis)
+    if(NOT MAKENSIS_EXECUTABLE)
+      add_custom_target(deploy
+        COMMAND ${CMAKE_COMMAND} -E echo "Error: NSIS not found"
+      )
+      return()
+    endif()
+
     # TODO: Consider replacing this code with the CPack NSIS Generator.
     #       See https://cmake.org/cmake/help/latest/cpack_gen/nsis.html
     include(GenerateSetupNsi)
@@ -51,6 +59,7 @@ function(add_windows_deploy_target)
     add_custom_command(
       OUTPUT ${PROJECT_BINARY_DIR}/briskcoin-win64-setup.exe
       COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/release
+      COMMAND ${CMAKE_STRIP} $<TARGET_FILE:briskcoin> -o ${PROJECT_BINARY_DIR}/release/$<TARGET_FILE_NAME:briskcoin>
       COMMAND ${CMAKE_STRIP} $<TARGET_FILE:briskcoin-qt> -o ${PROJECT_BINARY_DIR}/release/$<TARGET_FILE_NAME:briskcoin-qt>
       COMMAND ${CMAKE_STRIP} $<TARGET_FILE:briskcoind> -o ${PROJECT_BINARY_DIR}/release/$<TARGET_FILE_NAME:briskcoind>
       COMMAND ${CMAKE_STRIP} $<TARGET_FILE:briskcoin-cli> -o ${PROJECT_BINARY_DIR}/release/$<TARGET_FILE_NAME:briskcoin-cli>
@@ -58,7 +67,7 @@ function(add_windows_deploy_target)
       COMMAND ${CMAKE_STRIP} $<TARGET_FILE:briskcoin-wallet> -o ${PROJECT_BINARY_DIR}/release/$<TARGET_FILE_NAME:briskcoin-wallet>
       COMMAND ${CMAKE_STRIP} $<TARGET_FILE:briskcoin-util> -o ${PROJECT_BINARY_DIR}/release/$<TARGET_FILE_NAME:briskcoin-util>
       COMMAND ${CMAKE_STRIP} $<TARGET_FILE:test_briskcoin> -o ${PROJECT_BINARY_DIR}/release/$<TARGET_FILE_NAME:test_briskcoin>
-      COMMAND makensis -V2 ${PROJECT_BINARY_DIR}/briskcoin-win64-setup.nsi
+      COMMAND ${MAKENSIS_EXECUTABLE} -V2 ${PROJECT_BINARY_DIR}/briskcoin-win64-setup.nsi
       VERBATIM
     )
     add_custom_target(deploy DEPENDS ${PROJECT_BINARY_DIR}/briskcoin-win64-setup.exe)
@@ -91,7 +100,7 @@ function(add_macos_deploy_target)
     if(CMAKE_HOST_APPLE)
       add_custom_command(
         OUTPUT ${PROJECT_BINARY_DIR}/${osx_volname}.zip
-        COMMAND ${PYTHON_COMMAND} ${PROJECT_SOURCE_DIR}/contrib/macdeploy/macdeployqtplus ${macos_app} ${osx_volname} -translations-dir=${QT_TRANSLATIONS_DIR} -zip
+        COMMAND Python3::Interpreter ${PROJECT_SOURCE_DIR}/contrib/macdeploy/macdeployqtplus ${macos_app} ${osx_volname} -translations-dir=${QT_TRANSLATIONS_DIR} -zip
         DEPENDS ${PROJECT_BINARY_DIR}/${macos_app}/Contents/MacOS/Briskcoin-Qt
         VERBATIM
       )
@@ -104,7 +113,7 @@ function(add_macos_deploy_target)
     else()
       add_custom_command(
         OUTPUT ${PROJECT_BINARY_DIR}/dist/${macos_app}/Contents/MacOS/Briskcoin-Qt
-        COMMAND OBJDUMP=${CMAKE_OBJDUMP} ${PYTHON_COMMAND} ${PROJECT_SOURCE_DIR}/contrib/macdeploy/macdeployqtplus ${macos_app} ${osx_volname} -translations-dir=${QT_TRANSLATIONS_DIR}
+        COMMAND ${CMAKE_COMMAND} -E env OBJDUMP=${CMAKE_OBJDUMP} $<TARGET_FILE:Python3::Interpreter> ${PROJECT_SOURCE_DIR}/contrib/macdeploy/macdeployqtplus ${macos_app} ${osx_volname} -translations-dir=${QT_TRANSLATIONS_DIR}
         DEPENDS ${PROJECT_BINARY_DIR}/${macos_app}/Contents/MacOS/Briskcoin-Qt
         VERBATIM
       )
@@ -112,16 +121,22 @@ function(add_macos_deploy_target)
         DEPENDS ${PROJECT_BINARY_DIR}/dist/${macos_app}/Contents/MacOS/Briskcoin-Qt
       )
 
-      find_program(ZIP_COMMAND zip REQUIRED)
-      add_custom_command(
-        OUTPUT ${PROJECT_BINARY_DIR}/dist/${osx_volname}.zip
-        WORKING_DIRECTORY dist
-        COMMAND ${PROJECT_SOURCE_DIR}/cmake/script/macos_zip.sh ${ZIP_COMMAND} ${osx_volname}.zip
-        VERBATIM
-      )
-      add_custom_target(deploy
-        DEPENDS ${PROJECT_BINARY_DIR}/dist/${osx_volname}.zip
-      )
+      find_program(ZIP_EXECUTABLE zip)
+      if(NOT ZIP_EXECUTABLE)
+        add_custom_target(deploy
+          COMMAND ${CMAKE_COMMAND} -E echo "Error: ZIP not found"
+        )
+      else()
+        add_custom_command(
+          OUTPUT ${PROJECT_BINARY_DIR}/dist/${osx_volname}.zip
+          WORKING_DIRECTORY dist
+          COMMAND ${PROJECT_SOURCE_DIR}/cmake/script/macos_zip.sh ${ZIP_EXECUTABLE} ${osx_volname}.zip
+          VERBATIM
+        )
+        add_custom_target(deploy
+          DEPENDS ${PROJECT_BINARY_DIR}/dist/${osx_volname}.zip
+        )
+      endif()
     endif()
     add_dependencies(deploydir briskcoin-qt)
     add_dependencies(deploy deploydir)

@@ -62,6 +62,8 @@ briskcoin-cli -named createwallet wallet_name=mywallet load_on_startup=true
 briskcoin-cli -named createwallet mywallet load_on_startup=true
 ```
 
+`briskcoin rpc` can also be substituted for `briskcoin-cli -named`, and is a newer alternative.
+
 ## Versioning
 
 The RPC interface might change from one major version of Briskcoin Core to the

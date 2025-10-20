@@ -1,13 +1,13 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Briskcoin Core developers
+// Copyright (c) 2009-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BRISKCOIN_CONSENSUS_CONSENSUS_H
 #define BRISKCOIN_CONSENSUS_CONSENSUS_H
 
+#include <cstdint>
 #include <cstdlib>
-#include <stdint.h>
 
 /** The maximum allowed size for a serialized block, in bytes (only for buffer size limits) */
 static const unsigned int MAX_BLOCK_SERIALIZED_SIZE = 8000000;

@@ -1,10 +1,10 @@
-// Copyright (c) 2014-2018 The Briskcoin Core developers
+// Copyright (c) 2014-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <crypto/hmac_sha512.h>
 
-#include <string.h>
+#include <cstring>
 
 CHMAC_SHA512::CHMAC_SHA512(const unsigned char* key, size_t keylen)
 {

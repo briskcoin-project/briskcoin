@@ -8,7 +8,7 @@
 | *libbriskcoin_crypto*      | Hardware-optimized functions for data encryption, hashing, message authentication, and key derivation. |
 | *libbriskcoin_kernel*      | Consensus engine and support library used for validation by *libbriskcoin_node*. |
 | *libbriskcoinqt*           | GUI functionality used by *briskcoin-qt* and *briskcoin-gui* executables. |
-| *libbriskcoin_ipc*         | IPC functionality used by *briskcoin-node*, *briskcoin-wallet*, *briskcoin-gui* executables to communicate when [`-DWITH_MULTIPROCESS=ON`](multiprocess.md) is used. |
+| *libbriskcoin_ipc*         | IPC functionality used by *briskcoin-node* and *briskcoin-gui* executables to communicate when [`-DENABLE_IPC=ON`](multiprocess.md) is used. |
 | *libbriskcoin_node*        | P2P and RPC server functionality used by *briskcoind* and *briskcoin-qt* executables. |
 | *libbriskcoin_util*        | Home for common functionality shared by different executables and libraries. Similar to *libbriskcoin_common*, but lower-level (see [Dependencies](#dependencies)). |
 | *libbriskcoin_wallet*      | Wallet functionality used by *briskcoind* and *briskcoin-wallet* executables. |

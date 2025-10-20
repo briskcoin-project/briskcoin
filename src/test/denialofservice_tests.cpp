@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2022 The Briskcoin Core developers
+// Copyright (c) 2011-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,7 +21,7 @@
 #include <validation.h>
 
 #include <array>
-#include <stdint.h>
+#include <cstdint>
 
 #include <boost/test/unit_test.hpp>
 

@@ -31,7 +31,7 @@ const std::string UA_NAME("BriskcoinCore");
 //   - "// No build information available", if proper git information is not available
 
 //! git will put "#define GIT_COMMIT_ID ..." on the next line inside archives. 
-#define GIT_COMMIT_ID "f490f5562d4b20857ef8d042c050763795fd43da"
+#define GIT_COMMIT_ID "d0f6d9953a15d7c7111d46dcb76ab2bb18e5dee3"
 
 #ifdef BUILD_GIT_TAG
     #define BUILD_DESC BUILD_GIT_TAG

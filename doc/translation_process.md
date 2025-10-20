@@ -8,7 +8,7 @@ Transifex is setup to monitor the GitHub repo for updates, and when code contain
 
 Multiple language support is critical in assisting Briskcoin’s global adoption, and growth. One of Briskcoin’s greatest strengths is cross-border money transfers, any help making that easier is greatly appreciated.
 
-See the [Transifex Briskcoin project](https://www.transifex.com/briskcoin/briskcoin/) to assist in translations. You should also join the translation mailing list for announcements - see details below.
+See the [Transifex Briskcoin project](https://explore.transifex.com/briskcoin/briskcoin/) to assist in translations. You should also join the translation mailing list for announcements - see details below.
 
 ### Writing code with translations
 We use automated scripts to help extract translations in both Qt, and non-Qt source files. It is rarely necessary to manually edit the files in `src/qt/locale/`. The translation source files must adhere to the following format:
@@ -18,7 +18,7 @@ We use automated scripts to help extract translations in both Qt, and non-Qt sou
 
 To automatically regenerate the `briskcoin_en.ts` file, run the following commands:
 ```sh
-cmake --preset dev-mode -DWITH_USDT=OFF -DWITH_MULTIPROCESS=OFF
+cmake --preset dev-mode -DWITH_USDT=OFF -DENABLE_IPC=OFF
 cmake --build build_dev_mode --target translate
 ```
 
@@ -39,9 +39,9 @@ git commit
 ```
 
 ### Creating a Transifex account
-Visit the [Transifex Signup](https://www.transifex.com/signup/) page to create an account. Take note of your username and password, as they will be required to configure the command-line tool.
+Visit the [Transifex Signup](https://app.transifex.com/signup/open-source/) page to create an account. Take note of your username and password, as they will be required to configure the command-line tool.
 
-You can find the Briskcoin translation project at [https://www.transifex.com/briskcoin/briskcoin/](https://www.transifex.com/briskcoin/briskcoin/).
+You can find the Briskcoin translation project at [https://explore.transifex.com/briskcoin/briskcoin/](https://explore.transifex.com/briskcoin/briskcoin/).
 
 ### Installing the Transifex client command-line tool
 The client is used to fetch updated translations. Please check installation instructions and any other details at https://developers.transifex.com/docs/cli.
