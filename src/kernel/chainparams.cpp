@@ -165,26 +165,12 @@ public:
         fDefaultConsistencyChecks = false;
         m_is_mockable_chain = false;
 
-        m_assumeutxo_data = {
-            {
-                //.height = 840'000,
-                //.hash_serialized = AssumeutxoHash{uint256{"a2a5521b1b5ab65f67818e5e8eccabb7171a517f9e2382208f77687310768f96"}},
-                //.m_chain_tx_count = 991032194,
-                //.blockhash = consteval_ctor(uint256{"0000000000000000000320283a032748cef8227873ff4872689bf23f1cda83a5"}),
-            },
-            {
-                //.height = 880'000,
-                //.hash_serialized = AssumeutxoHash{uint256{"dbd190983eaf433ef7c15f78a278ae42c00ef52e0fd2a54953782175fbadcea9"}},
-                //.m_chain_tx_count = 1145604538,
-                //.blockhash = consteval_ctor(uint256{"000000000000000000010b17283c3c400507969a9c2afd1dcf2082ec5cca2880"}),
-            },
-            {
-                //.height = 910'000,
-                //.hash_serialized = AssumeutxoHash{uint256{"4daf8a17b4902498c5787966a2b51c613acdab5df5db73f196fa59a4da2f1568"}},
-                //.m_chain_tx_count = 1226586151,
-                //.blockhash = consteval_ctor(uint256{"0000000000000000000108970acb9522ffd516eae17acddcb1bd16469194a821"}),
-            }
+        m_assumeutxo_data = std::vector<AssumeutxoData>{
+            {0, AssumeutxoHash{uint256{}}, 0, uint256{}},
+            {0, AssumeutxoHash{uint256{}}, 0, uint256{}},
+            {0, AssumeutxoHash{uint256{}}, 0, uint256{}}
         };
+
 
         chainTxData = ChainTxData{
             // Data from RPC: getchaintxstats 4096 00000000000000000000611fd22f2df7c8fbd0688745c3a6c3bb5109cc2a12cb
@@ -582,7 +568,7 @@ public:
             consensus.vDeployments[deployment_pos].min_activation_height = version_bits_params.min_activation_height;
         }
 
-        genesis = CreateGenesisBlock(1296688602, 2, 0x207fffff, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1296688602, 0, 0x207fffff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256{"4d7328373020ed6dbd37d72a0803b23c6a9262e74f00440c8c1e5a3b690d1b9e"});
         assert(genesis.hashMerkleRoot == uint256{"bd1a89a3c54a82153ce12587eb25598566e1a0d96169164d6cdc1aaac17310d6"});
