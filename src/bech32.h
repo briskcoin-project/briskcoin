@@ -1,5 +1,5 @@
 // Copyright (c) 2017, 2021 Pieter Wuille
-// Copyright (c) 2021 The Briskcoin Core developers
+// Copyright (c) 2021-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -14,7 +14,7 @@
 #ifndef BRISKCOIN_BECH32_H
 #define BRISKCOIN_BECH32_H
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <vector>
 

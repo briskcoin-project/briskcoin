@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2022 The Briskcoin Core developers
+// Copyright (c) 2009-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -15,11 +15,11 @@
 #include <util/overflow.h>
 
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <set>
-#include <stddef.h>
-#include <stdint.h>
 
 class CBlockIndex;
 

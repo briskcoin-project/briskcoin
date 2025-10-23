@@ -1,12 +1,12 @@
-// Copyright (c) 2022 The Briskcoin Core developers
+// Copyright (c) 2022-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BRISKCOIN_NODE_CONNECTION_TYPES_H
 #define BRISKCOIN_NODE_CONNECTION_TYPES_H
 
+#include <cstdint>
 #include <string>
-#include <stdint.h>
 
 /** Different types of connections to a peer. This enum encapsulates the
  * information we have available at the time of opening or accepting the

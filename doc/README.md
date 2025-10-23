@@ -17,6 +17,9 @@ Unpack the files into a directory and run:
 
 - `bin/briskcoin-qt` (GUI) or
 - `bin/briskcoind` (headless)
+- `bin/briskcoin` (wrapper command)
+
+The `briskcoin` command supports subcommands like `briskcoin gui`, `briskcoin node`, and `briskcoin rpc` exposing different functionality. Subcommands can be listed with `briskcoin help`.
 
 ### Windows
 

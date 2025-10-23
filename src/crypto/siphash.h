@@ -1,11 +1,11 @@
-// Copyright (c) 2016-2020 The Briskcoin Core developers
+// Copyright (c) 2016-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BRISKCOIN_CRYPTO_SIPHASH_H
 #define BRISKCOIN_CRYPTO_SIPHASH_H
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <span.h>
 #include <uint256.h>
@@ -27,7 +27,7 @@ public:
      */
     CSipHasher& Write(uint64_t data);
     /** Hash arbitrary bytes. */
-    CSipHasher& Write(Span<const unsigned char> data);
+    CSipHasher& Write(std::span<const unsigned char> data);
     /** Compute the 64-bit SipHash-2-4 of the data written so far. The object remains untouched. */
     uint64_t Finalize() const;
 };

@@ -1,4 +1,4 @@
-// Copyright (c) 2022 The Briskcoin Core developers
+// Copyright (c) 2022-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,6 +21,6 @@ public:
     }
 };
 
-[[nodiscard]] CTxMemPoolEntry ConsumeTxMemPoolEntry(FuzzedDataProvider& fuzzed_data_provider, const CTransaction& tx) noexcept;
+[[nodiscard]] CTxMemPoolEntry ConsumeTxMemPoolEntry(FuzzedDataProvider& fuzzed_data_provider, const CTransaction& tx, uint32_t max_height=std::numeric_limits<uint32_t>::max()) noexcept;
 
 #endif // BRISKCOIN_TEST_FUZZ_UTIL_MEMPOOL_H

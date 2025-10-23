@@ -14,6 +14,8 @@ Start Briskcoin Core:
 $ briskcoind -signer=../HWI/hwi.py
 ```
 
+`briskcoin node` can also be substituted for `briskcoind`.
+
 ### Device setup
 
 Follow the hardware manufacturers instructions for the initial device setup, as well as their instructions for creating a backup. Alternatively, for some devices, you can use the `setup`, `restore` and `backup` commands provided by [HWI](https://github.com/briskcoin-core/HWI).
@@ -39,6 +41,8 @@ Create a wallet, this automatically imports the public keys:
 ```sh
 $ briskcoin-cli createwallet "hww" true true "" true true true
 ```
+
+`briskcoin rpc` can also be substituted for `briskcoin-cli`.
 
 ### Verify an address
 

@@ -113,3 +113,5 @@ To see which CJDNS peers your node is connected to, use `briskcoin-cli -netinfo 
 or the `getpeerinfo` RPC (i.e. `briskcoin-cli getpeerinfo`).
 
 You can use the `getnodeaddresses` RPC to fetch a number of CJDNS peers known to your node; run `briskcoin-cli help getnodeaddresses` for details.
+
+`briskcoin rpc` can also be substituted for `briskcoin-cli`.

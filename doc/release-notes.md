@@ -1,7 +1,7 @@
-2.0.0 Release Notes
+3.0.0 Release Notes
 ====================
 
-Briskcoin Core version 2.0.0 is now available from:
+Briskcoin Core version 3.0.0 is now available from:
 
   <https://briskcoin.org>
 
@@ -33,6 +33,7 @@ bootstrap.dat) anew afterwards.
 
 This does not affect wallet forward or backward compatibility.
 
+
 How to Upgrade
 ==============
 
@@ -57,137 +58,290 @@ unsupported systems.
 Notable changes
 ===============
 
-### P2P and Network Changes
+Policy
+------
 
-- Support for UPnP was dropped. If you want to open a port automatically, consider using the `-natpmp`
-option instead, which uses PCP or NAT-PMP depending on router support. (#31130)
+- The maximum number of potentially executed legacy signature operations in a
+  single standard transaction is now limited to 2500. Signature operations in all
+  previous output scripts, in all input scripts, as well as all P2SH redeem
+  scripts (if there are any) are counted toward the limit. The new limit is
+  assumed to not affect any known typically formed standard transactions. The
+  change was done to prepare for a possible BIP54 deployment in the future. (#32521)
 
-- libnatpmp was replaced with a built-in implementation of PCP and NAT-PMP (still enabled using the `-natpmp` option). This supports automatic IPv4 port forwarding as well as IPv6 pinholing. (#30043)
+- `-datacarriersize` is increased to 100,000 by default, which effectively uncaps
+  the limit (as the maximum transaction size limit will be hit first). It can be
+  overridden with `-datacarriersize=83` to revert to the limit enforced in previous
+  versions. (#32406)
 
-- When the `-port` configuration option is used, the default onion listening port will now
-be derived to be that port + 1 instead of being set to a fixed value (8334 on mainnet).
-This re-allows setups with multiple local nodes using different `-port` and not using `-bind`,
-which would lead to a startup failure in v28.0 due to a port collision.
-Note that a `HiddenServicePort` manually configured in `torrc` may need adjustment if used in
-connection with the `-port` option.
-For example, if you are using `-port=5555` with a non-standard value and not using `-bind=...=onion`,
-previously Briskcoin Core would listen for incoming Tor connections on `127.0.0.1:8334`.
-Now it would listen on `127.0.0.1:5556` (`-port` plus one). If you configured the hidden service manually
-in torrc now you have to change it from `HiddenServicePort 8333 127.0.0.1:8334` to `HiddenServicePort 8333
-127.0.0.1:5556`, or configure briskcoind with `-bind=127.0.0.1:8334=onion` to get the previous behavior.
-(#31223)
+- Multiple data carrier (OP_RETURN) outputs in a transaction are now permitted for
+  relay and mining. The `-datacarriersize` limit applies to the aggregate size of
+  the scriptPubKeys across all such outputs in a transaction, not including the
+  scriptPubKey size itself. (#32406)
 
-- Upon receiving an orphan transaction (an unconfirmed transaction that spends unknown inputs), the node will attempt to download missing parents from all peers who announced the orphan. This change may increase bandwidth usage but make orphan-handling more reliable. (#31397)
+- The minimum block feerate (`-blockmintxfee`) has been changed to 0.001 satoshi per
+  vB. It can still be changed using the configuration option. This option can be used
+  by miners to set a minimum feerate on packages added to block templates. (#33106)
 
-### Mempool Policy and Mining Changes
+- The default minimum relay feerate (`-minrelaytxfee`) and incremental relay feerate
+  (`-incrementalrelayfee`) have been changed to 0.1 satoshis per vB. They can still
+  be changed using their respective configuration options, but it is recommended to
+  change both together if you decide to do so. (#33106)
 
-- Ephemeral dust is a new concept that allows a single
-dust output in a transaction, provided the transaction
-is zero fee. In order to spend any unconfirmed outputs
-from this transaction, the spender must also spend
-this dust in addition to any other desired outputs.
-In other words, this type of transaction
-should be created in a transaction package where
-the dust is both created and spent simultaneously. (#30239)
+  Other minimum feerates (e.g. the dust feerate, the minimum returned by the fee
+  estimator, and all feerates used by the wallet) remain unchanged. The mempool minimum
+  feerate still changes in response to high volume.
 
-- Due to a bug, the default block reserved weight (`4,000 WU`) for fixed-size block header, transactions count, and coinbase transaction was reserved twice and could not be lowered. As a result the total reserved weight was always `8,000 WU`, meaning that even when specifying a `-blockmaxweight` higher than the default (even to the max of `4,000,000 WU`), the actual block size will never exceed `3,992,000 WU`.
-The fix consolidates the reservation into a single place and introduces a new startup option, `-blockreservedweight` which specifies the reserved weight directly. The default value of `-blockreservedweight` is set to `8,000 WU` to ensure backward compatibility for users who relied on the previous behavior of `-blockmaxweight`.
-The minimum value of `-blockreservedweight` is set to `2,000 WU`. Users setting `-blockreservedweight` below the default should ensure that the total weight of their block header, transaction count, and coinbase transaction does not exceed the reduced value or they may risk mining an invalid block. (#31384)
+  Note that unless these lower defaults are widely adopted across the network, transactions
+  created with lower fee rates are not guaranteed to propagate or confirm. The wallet
+  feerates remain unchanged; `-mintxfee` must be changed before attempting to create
+  transactions with lower feerates using the wallet. (#33106)
 
-### Updated RPCs
+P2P and network changes
+-----------------------
 
-- The RPC `testmempoolaccept` response now includes a `reject-details` field in some cases,
-similar to the complete error messages returned by `sendrawtransaction` (#28121)
+- Opportunistic 1-parent-1-child package relay has been improved to handle
+  situations when the child already has unconfirmed parent(s) in the mempool.
+  This means that 1p1c packages can be accepted and propagate, even if they are
+  connected to broader topologies: multi-parent-1-child (where only 1 parent
+  requires fee-bumping), grandparent-parent-child (where only parent requires
+  fee-bumping) etc. (#31385)
 
-- Duplicate blocks submitted with `submitblock` will now persist their block data
-even if it was previously pruned. If pruning is activated, the data will be
-pruned again eventually once the block file it is persisted in is selected for
-pruning. This is consistent with the behaviour of `getblockfrompeer` where the
-block is persisted as well even when pruning. (#31175)
+- The transaction orphanage, which holds transactions with missing inputs temporarily
+  while the node attempts to fetch its parents, now has improved Denial of Service protections.
+  Previously, it enforced a maximum number of unique transactions (default 100,
+  configurable using `-maxorphantx`). Now, its limits are as follows: the number of
+  entries (unique by wtxid and peer), plus each unique transaction's input count divided
+  by 10, must not exceed 3,000. The total weight of unique transactions must not exceed
+  `404,000` Wu multiplied by the number of peers. (#31829)
 
-- `getmininginfo` now returns `nBits` and the current target in the `target` field. It also returns a `next` object which specifies the `height`, `nBits`, `difficulty`, and `target` for the next block. (#31583)
+- The `-maxorphantx` option no longer has any effect, since the orphanage no longer
+  limits the number of unique transactions. Users should remove this configuration
+  option if they were using it, as the setting will cause an error in future versions
+  when it is no longer recognized. (#31829)
 
-- `getblock` and `getblockheader` now return the current target in the `target` field (#31583)
+New `briskcoin` command
+---------------------
 
-- `getblockchaininfo` and `getchainstates` now return `nBits` and the current target in the `target` field (#31583)
+- A new `briskcoin` command line tool has been added to make features more discoverable
+  and convenient to use. The `briskcoin` tool just calls other executables and does not
+  implement any functionality on its own. Specifically `briskcoin node` is a synonym for
+  `briskcoind`, `briskcoin gui` is a synonym for `briskcoin-qt`, and `briskcoin rpc` is a synonym
+  for `briskcoin-cli -named`. Other commands and options can be listed with `briskcoin help`.
+  The new `briskcoin` command is an alternative to calling other commands directly, but it
+  doesn't replace them, and there are no plans to deprecate existing commands. (#31375)
 
-- the `getblocktemplate` RPC `curtime` (BIP22) and `mintime` (BIP23) fields now
-  account for the timewarp fix proposed in BIP94 on all networks. This ensures
-  that, in the event a timewarp fix softfork activates on mainnet, un-upgraded
-  miners will not accidentally violate the timewarp rule. (#31376, #31600)
-As a reminder, it's important that any software which uses the `getblocktemplate`
-RPC takes these values into account (either `curtime` or `mintime` is fine).
-Relying only on a clock can lead to invalid blocks under some circumstances,
-especially once a timewarp fix is deployed. (#31600)
+External Signing
+----------------
 
-### New RPCs
+- Support for external signing on Windows has been re-enabled. (#29868)
 
-- `getdescriptoractivity` can be used to find all spend/receive activity relevant to
-  a given set of descriptors within a set of specified blocks. This call can be used with
-  `scanblocks` to lessen the need for additional indexing programs. (#30708)
+IPC Mining Interface
+--------------------
 
+- The new `briskcoin` command does support one new feature: an (experimental) IPC Mining
+  Interface that allows the node to work with Stratum v2 or other mining client software,
+  see (#31098). When the node is started with `briskcoin -m node -ipcbind=unix` it will
+  listen on a unix socket for IPC client connections, allowing clients to request block
+  templates and submit mined blocks. The `-m` option launches a new internal binary
+  (`briskcoin-node` instead of `briskcoind`) and is currently required but will become optional
+  in the future (with [#33229](https://github.com/briskcoin/briskcoin/pull/33229)).
 
-### Updated REST APIs
+- IPC connectivity introduces new dependencies (see [multiprocess.md](https://github.com/briskcoin/briskcoin/blob/master/doc/multiprocess.md)),
+  which can be turned off with the `-DENABLE_IPC=OFF` build option if you do not intend
+  to use IPC. (#31802)
 
-- `GET /rest/block/<BLOCK-HASH>.json` and `GET /rest/headers/<BLOCK-HASH>.json` now return the current target in the `target` field
+Install changes
+---------------
 
-### Updated Settings
+- The `test_briskcoin` executable is now installed in `libexec/` instead of `bin/`.
+  It can still be executed directly, or accessed through the new `briskcoin` command
+  as `briskcoin test`. The `libexec/` directory also contains new `briskcoin-node` and
+  `briskcoin-gui` binaries which support IPC features and are called through the
+  `briskcoin` tool. In source builds only, `test_briskcoin-qt`, `bench_briskcoin`, and
+  `briskcoin-chainstate` are also now installed to `libexec/` instead of `bin/` and
+  can be accessed through the new `briskcoin` command. See `briskcoin help` output for
+  details. (#31679)
 
-- The maximum allowed value for the `-dbcache` configuration option has been
-  dropped due to recent UTXO set growth. Note that before this change, large `-dbcache`
-  values were automatically reduced to 16 GiB (1 GiB on 32 bit systems). (#28358)
+- On Windows, the installer no longer adds a “(64-bit)” suffix to entries in the
+  Start Menu (#32132), and it now automatically removes obsolete artifacts during
+  upgrades (#33422).
 
-- Handling of negated `-noseednode`, `-nobind`, `-nowhitebind`, `-norpcbind`, `-norpcallowip`, `-norpcwhitelist`, `-notest`, `-noasmap`, `-norpcwallet`, `-noonlynet`, and `-noexternalip` options has changed. Previously negating these options had various confusing and undocumented side effects. Now negating them just resets the settings and restores default behaviors, as if the options were not specified.
+Indexes
+-------
 
-- Starting with v28.0, the `-mempoolfullrbf` startup option was set to
-default to `1`. With widespread adoption of this policy, users no longer
-benefit from disabling it, so the option has been removed, making full
-replace-by-fee the standard behavior. (#30592)
+- The implementation of coinstatsindex was changed to prevent an overflow bug that
+  could already be observed on the default Signet. The new version of the index will
+  need to be synced from scratch when starting the upgraded node for the first time.
 
-- Setting `-upnp` will now log a warning and be interpreted as `-natpmp`. Consider using `-natpmp` directly instead. (#31130, #31916)
+  The new version is stored in `/indexes/coinstatsindex/` in contrast to the old version
+  which was stored at `/indexes/coinstats/`. The old version of the index is not deleted
+  by the upgraded node in case the user chooses to downgrade their node in the future.
+  If the user does not plan to downgrade it is safe for them to remove `/indexes/coinstats/`
+  from their datadir. A future release of Briskcoin Core may remove the old version of the
+  index automatically. (#30469)
 
-- As a safety check, Briskcoin core will **fail to start** when `-blockreservedweight` init parameter value is lower than `2000` weight units. Briskcoin Core will also **fail to start** if the `-blockmaxweight` or `-blockreservedweight` init parameter exceeds consensus limit of `4,000,000 WU`.
+Logging
+-------
+- Unconditional logging to disk is now rate limited by giving each source location
+  a quota of 1MiB per hour. Unconditional logging is any logging with a log level
+  higher than debug, that is `info`, `warning`, and `error`. All logs will be
+  prefixed with `[*]` if there is at least one source location that is currently
+  being suppressed. (#32604)
 
-- Passing `-debug=0` or `-debug=none` now behaves like `-nodebug`: previously set debug categories will be cleared, but subsequent `-debug` options will still be applied.
+- When `-logsourcelocations` is enabled, the log output now contains the entire
+  function signature instead of just the function name. (#32604)
 
-- The default for `-rpcthreads` has been changed from 4 to 16, and the default for `-rpcworkqueue` has been changed from 16 to 64. (#31215).
+Updated RPCs
+------------
 
-### Build System
+- The `-paytxfee` startup option and the `settxfee` RPC are now deprecated and
+  will be removed in Briskcoin Core 31.0. They allowed the user to set a static fee
+  rate for wallet transactions, which could potentially lead to overpaying or underpaying.
+  Users should instead rely on fee estimation or specify a fee rate per transaction
+  using the `fee_rate` argument in RPCs such as `fundrawtransaction`, `sendtoaddress`,
+  `send`, `sendall`, and `sendmany`. (#31278)
 
-The build system has been migrated from Autotools to CMake:
+- Any RPC in which one of the parameters is a descriptor will throw an error
+  if the provided descriptor contains a whitespace at the beginning or the end
+  of the public key within a fragment - e.g. `pk( KEY)` or `pk(KEY )`. (#31603)
 
-1. The minimum required CMake version is 3.22.
-2. In-source builds are not allowed. When using a subdirectory within the root source tree as a build directory, it is recommended that its name includes the substring "build".
-3. CMake variables may be used to configure the build system. See [Autotools to CMake Options Mapping](https://github.com/briskcoin-core/briskcoin-devwiki/wiki/Autotools-to-CMake-Options-Mapping) for details.
-4. For single-configuration generators, the default build configuration (`CMAKE_BUILD_TYPE`) is "RelWithDebInfo". However, for the "Release" configuration, CMake defaults to the compiler optimization flag `-O3`, which has not been extensively tested with Briskcoin Core. Therefore, the build system replaces it with `-O2`.
-5. By default, the built executables and libraries are located in the `bin/` and `lib/` subdirectories of the build directory.
-6. The build system supports component‐based installation. The names of the installable components coincide with the build target names. For example:
-```
-cmake -B build
-cmake --build build --target briskcoind
-cmake --install build --component briskcoind
-```
+- The `submitpackage` RPC, which allows submissions of child-with-parents
+  packages, no longer requires that all unconfirmed parents be present. The
+  package may contain other in-mempool ancestors as well. (#31385)
 
-7. If any of the `CPPFLAGS`, `CFLAGS`, `CXXFLAGS` or `LDFLAGS` environment variables were used in your Autotools-based build process, you should instead use the corresponding CMake variables (`APPEND_CPPFLAGS`, `APPEND_CFLAGS`, `APPEND_CXXFLAGS` and `APPEND_LDFLAGS`). Alternatively, if you opt to use the dedicated `CMAKE_<...>_FLAGS` variables, you must ensure that the resulting compiler or linker invocations are as expected.
+- The `waitfornewblock` RPC now takes an optional `current_tip` argument. It
+  is also no longer hidden. (#30635)
 
-For more detailed guidance on configuring and using CMake, please refer to the official [CMake documentation](https://cmake.org/cmake/help/latest/) and [CMake’s User Interaction Guide](https://cmake.org/cmake/help/latest/guide/user-interaction/index.html). Additionally, consult platform-specific `doc/build-*.md` build guides for instructions tailored to your operating system.
+- The `waitforblock` and `waitforblockheight` RPCs are no longer hidden.  (#30635)
 
-## Low-Level Changes
+- The `psbtbumpfee` and `bumpfee` RPCs allow a replacement under fullrbf and no
+  longer require BIP-125 signalling. (#31953)
 
-### Tools and Utilities
+- Transaction Script validation errors used to return the reason for the error
+  prefixed by either `mandatory-script-verify-flag-failed` if it was a consensus
+  error, or `non-mandatory-script-verify-flag` (without "-failed") if it was a
+  standardness error. This has been changed to `block-script-verify-flag-failed`
+  and `mempool-script-verify-flag-failed` for all block and mempool errors
+  respectively. (#33183)
 
-- A new tool [`utxo_to_sqlite.py`](/contrib/utxo-tools/utxo_to_sqlite.py)
-  converts a compact-serialized UTXO snapshot (as created with the
-  `dumptxoutset` RPC) to a SQLite3 database. Refer to the script's `--help`
-  output for more details. (#27432)
+- The `getmininginfo` RPC now returns "blockmintxfee" result specifying the value of
+  `-blockmintxfee` configuration. (#33189)
 
-### Tests
+- The `getmempoolinfo` RPC now returns an additional "permitbaremultisig" and
+  "maxdatacarriersize" field, reflecting the `-permitbaremultisig` and `-datacarriersize`
+  config values. (#29954)
 
-- The BIP94 timewarp attack mitigation (designed for testnet4) is no longer active on the regtest network. (#31156)
+Changes to wallet-related RPCs can be found in the Wallet section below.
 
-### Dependencies
+New RPCs
+--------
 
-- MiniUPnPc and libnatpmp have been removed as dependencies (#31130, #30043).
+- A new REST API endpoint (`/rest/spenttxouts/BLOCKHASH`) has been introduced for
+  efficiently fetching spent transaction outputs using the block's undo data (#32540).
+
+Build System
+------------
+
+Updated settings
+----------------
+
+- The `-maxmempool` and `-dbcache` startup parameters are now capped on 32-bit systems
+  to 500MB and 1GiB respectively. (#32530)
+
+- The `-natpmp` option is now set to `1` by default. This means nodes with `-listen`
+  enabled (the default) but running behind a firewall, such as a local network router,
+  will be reachable if the firewall/router supports any of the `PCP` or `NAT-PMP`
+  protocols. (#33004)
+
+- The `-upnp` setting has now been fully removed. Use `-natpmp` instead. (#32500)
+
+- Previously, `-proxy` specified the proxy for all networks (except I2P which
+  uses `-i2psam`) and only the Tor proxy could have been specified separately
+  via `-onion`. Now, the syntax of `-proxy` has been extended and it is possible
+  to specify separately the proxy for IPv4, IPv6, Tor and CJDNS by appending `=`
+  followed by the network name, for example `-proxy=127.0.0.1:5555=ipv6`
+  configures a proxy only for IPv6. The `-proxy` option can be used multiple
+  times to define different proxies for different networks, such as
+  `-proxy=127.0.0.1:4444=ipv4 -proxy=10.0.0.1:6666=ipv6`. Later settings
+  override earlier ones for the same network; this can be used to remove an
+  earlier all-networks proxy and use direct connections only for a given
+  network, for example `-proxy=127.0.0.1:5555 -proxy=0=cjdns`. (#32425)
+
+- The `-blockmaxweight` startup option has been updated to be debug-only.
+  It is still available to users, but now hidden from the default `-help` text
+  and shown only in `-help-debug` (#32654).
+
+Changes to GUI or wallet related settings can be found in the GUI or Wallet section below.
+
+Wallet
+------
+
+- BDB legacy wallets can no longer be created or loaded. They can be migrated
+  to the new descriptor wallet format. Refer to the `migratewallet` RPC for more
+  details.
+
+- The legacy wallet removal drops redundant options in the briskcoin-wallet tool,
+  such as `-withinternalbdb`, `-legacy`, and `-descriptors`. Moreover, the
+  legacy-only RPCs `addmultisigaddress`, `dumpprivkey`, `dumpwallet`,
+  `importaddress`, `importmulti`, `importprivkey`, `importpubkey`,
+  `importwallet`, `newkeypool`, `sethdseed`, and `upgradewallet`, are removed.
+  (#32944, #28710, #32438, #31250)
+
+- Support has been added for spending TRUC transactions received by the
+  wallet, as well as creating TRUC transactions. The wallet ensures that
+  TRUC policy rules are being met. The wallet will throw an error if the
+  user is trying to spend TRUC utxos with utxos of other versions.
+  Additionally, the wallet will treat unconfirmed TRUC sibling
+  transactions as mempool conflicts. The wallet will also ensure that
+  transactions spending TRUC utxos meet the required size restrictions. (#32896)
+
+- Since descriptor wallets do not allow mixing watchonly and non-watchonly descriptors,
+  the `include_watchonly` option (and its variants in naming) are removed from all RPCs
+  that had it. (#32618)
+
+- The `iswatchonly` field is removed from any RPCs that returned it. (#32618)
+
+- `unloadwallet` - Return RPC_INVALID_PARAMETER when both the RPC wallet endpoint
+  and wallet_name parameters are unspecified. Previously the RPC failed with a JSON
+  parsing error. (#32845)
+
+- `getdescriptoractivity` - Mark blockhashes and scanobjects arguments as required,
+  so the user receives a clear help message when either is missing. As in `unloadwallet`,
+  previously the RPC failed with a JSON parsing error. (#32845)
+
+- `getwalletinfo` - Removes the fields `balance`, `immature_balance` and
+  `unconfirmed_balance`. (#32721)
+
+- `getunconfirmedbalance` - Removes this RPC command. You can query the `getbalances`
+  RPC and inspect the `["mine"]["untrusted_pending"]` entry within the JSON
+  response. (#32721)
+
+- The following RPCs now contain a `version` parameter that allows
+  the user to create transactions of any standard version number (1-3):
+  - `createrawtransaction`
+  - `createpsbt`
+  - `send`
+  - `sendall`
+  - `walletcreatefundedpsbt`
+  (#32896)
+
+GUI changes
+-----------
+
+- The GUI has been migrated from Qt 5 to Qt 6. On Windows, dark mode is now supported.
+  On macOS, the Metal backend is now used. (#30997)
+
+- A transaction's fee bump is allowed under fullrbf and no longer requires
+  BIP-125 signalling. (#31953)
+
+- Custom column widths in the Transactions tab are reset as a side-effect of legacy
+  wallet removal. (#32459)
+
+Low-level changes
+=================
+
+- Logs now include which peer sent us a header. Additionally there are fewer
+  redundant header log messages. A side-effect of this change is that for
 
 Credits
 =======
@@ -196,3 +350,6 @@ Thanks to everyone who directly contributed to this release:
 
 BKC developers
 BTC developers
+
+As well as to everyone that helped with translations on
+[Transifex](https://explore.transifex.com/briskcoin/briskcoin/).

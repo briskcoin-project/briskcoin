@@ -1,12 +1,12 @@
-// Copyright (c) 2014-2022 The Briskcoin Core developers
+// Copyright (c) 2014-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BRISKCOIN_CRYPTO_RIPEMD160_H
 #define BRISKCOIN_CRYPTO_RIPEMD160_H
 
+#include <cstdint>
 #include <cstdlib>
-#include <stdint.h>
 
 /** A hasher class for RIPEMD-160. */
 class CRIPEMD160

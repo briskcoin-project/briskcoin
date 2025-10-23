@@ -1,12 +1,13 @@
-// Copyright (c) 2024- The Briskcoin Core developers
+// Copyright (c) 2024-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
 #include <random.h>
-#include <stddef.h>
 #include <util/strencodings.h>
+
 #include <cassert>
+#include <cstddef>
 #include <optional>
 #include <vector>
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2021 The Briskcoin Core developers
+// Copyright (c) 2016-present The Briskcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,7 +10,7 @@
 class CRPCCommand;
 
 namespace wallet {
-Span<const CRPCCommand> GetWalletRPCCommands();
+std::span<const CRPCCommand> GetWalletRPCCommands();
 } // namespace wallet
 
 #endif // BRISKCOIN_WALLET_RPC_WALLET_H

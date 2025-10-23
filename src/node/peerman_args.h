@@ -1,3 +1,7 @@
+// Copyright (c) 2023-present The Briskcoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or https://opensource.org/license/mit.
+
 #ifndef BRISKCOIN_NODE_PEERMAN_ARGS_H
 #define BRISKCOIN_NODE_PEERMAN_ARGS_H
 

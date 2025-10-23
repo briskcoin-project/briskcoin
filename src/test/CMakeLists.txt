@@ -25,6 +25,8 @@ add_executable(test_briskcoin
   blockmanager_tests.cpp
   bloom_tests.cpp
   bswap_tests.cpp
+  caches_tests.cpp
+  chainstate_write_tests.cpp
   checkqueue_tests.cpp
   cluster_linearize_tests.cpp
   coins_tests.cpp
@@ -63,6 +65,7 @@ add_executable(test_briskcoin
   net_peer_eviction_tests.cpp
   net_tests.cpp
   netbase_tests.cpp
+  node_init_tests.cpp
   node_warnings_tests.cpp
   orphanage_tests.cpp
   pcp_tests.cpp
@@ -82,6 +85,7 @@ add_executable(test_briskcoin
   rpc_tests.cpp
   sanity_tests.cpp
   scheduler_tests.cpp
+  script_assets_tests.cpp
   script_p2sh_tests.cpp
   script_parse_tests.cpp
   script_segwit_tests.cpp
@@ -98,12 +102,15 @@ add_executable(test_briskcoin
   span_tests.cpp
   streams_tests.cpp
   sync_tests.cpp
+  system_ram_tests.cpp
   system_tests.cpp
+  testnet4_miner_tests.cpp
   timeoffsets_tests.cpp
   torcontrol_tests.cpp
   transaction_tests.cpp
   translation_tests.cpp
   txdownload_tests.cpp
+  txgraph_tests.cpp
   txindex_tests.cpp
   txpackage_tests.cpp
   txreconciliation_tests.cpp
@@ -140,6 +147,8 @@ target_raw_data_sources(test_briskcoin NAMESPACE test::data
   data/asmap.raw
 )
 
+add_windows_application_manifest(test_briskcoin)
+
 target_link_libraries(test_briskcoin
   core_interface
   test_util
@@ -156,11 +165,12 @@ if(ENABLE_WALLET)
   add_subdirectory(${PROJECT_SOURCE_DIR}/src/wallet/test wallet)
 endif()
 
-if(WITH_MULTIPROCESS)
+if(ENABLE_IPC)
   target_link_libraries(briskcoin_ipc_test
     PRIVATE
       core_interface
       univalue
+      Boost::headers
   )
 
   target_sources(test_briskcoin
@@ -177,21 +187,23 @@ function(add_boost_test source_file)
 
   file(READ "${source_file}" source_file_content)
   string(REGEX
-    MATCH "(BOOST_FIXTURE_TEST_SUITE|BOOST_AUTO_TEST_SUITE)\\(([A-Za-z0-9_]+)"
+    MATCHALL "(BOOST_FIXTURE_TEST_SUITE|BOOST_AUTO_TEST_SUITE)\\(([A-Za-z0-9_]+)"
     test_suite_macro "${source_file_content}"
   )
-  string(REGEX
+  list(TRANSFORM test_suite_macro
     REPLACE "(BOOST_FIXTURE_TEST_SUITE|BOOST_AUTO_TEST_SUITE)\\(" ""
-    test_suite_name "${test_suite_macro}"
   )
-  if(test_suite_name)
+  foreach(test_suite_name IN LISTS test_suite_macro)
     add_test(NAME ${test_suite_name}
       COMMAND test_briskcoin --run_test=${test_suite_name} --catch_system_error=no --log_level=test_suite -- DEBUG_LOG_OUT
     )
     set_property(TEST ${test_suite_name} PROPERTY
-      SKIP_REGULAR_EXPRESSION "no test cases matching filter"
+      SKIP_REGULAR_EXPRESSION
+        "no test cases matching filter"
+        "skipping script_assets_test"
+        "skipping total_ram"
     )
-  endif()
+  endforeach()
 endfunction()
 
 function(add_all_test_targets)
@@ -208,4 +220,4 @@ endfunction()
 
 add_all_test_targets()
 
-install_binary_component(test_briskcoin)
+install_binary_component(test_briskcoin INTERNAL)

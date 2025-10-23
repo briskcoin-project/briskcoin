@@ -1,7 +1,7 @@
 [main]
 host = https://www.transifex.com
 
-[o:briskcoin:p:briskcoin:r:qt-translation-029x]
+[o:briskcoin:p:briskcoin:r:qt-translation-030x]
 file_filter = src/qt/locale/briskcoin_<lang>.xlf
 source_file = src/qt/locale/briskcoin_en.xlf
 source_lang = en

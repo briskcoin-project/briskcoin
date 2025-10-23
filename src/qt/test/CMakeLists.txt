@@ -20,7 +20,7 @@ target_link_libraries(test_briskcoin-qt
   test_util
   briskcoin_node
   Boost::headers
-  Qt5::Test
+  Qt6::Test
 )
 
 import_plugins(test_briskcoin-qt)
@@ -45,4 +45,4 @@ if(WIN32 AND VCPKG_TARGET_TRIPLET)
   )
 endif()
 
-install_binary_component(test_briskcoin-qt)
+install_binary_component(test_briskcoin-qt INTERNAL)

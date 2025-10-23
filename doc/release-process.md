@@ -57,10 +57,10 @@ Release Process
 - Clear the release notes and move them to the wiki (see "Write the release notes" below).
 - Translations on Transifex:
     - Pull translations from Transifex into the master branch.
-    - Create [a new resource](https://www.transifex.com/briskcoin/briskcoin/content/) named after the major version with the slug `qt-translation-<RRR>x`, where `RRR` is the major branch number padded with zeros. Use `src/qt/locale/briskcoin_en.xlf` to create it.
+    - Create [a new resource](https://app.transifex.com/briskcoin/briskcoin/content/) named after the major version with the slug `qt-translation-<RRR>x`, where `RRR` is the major branch number padded with zeros. Use `src/qt/locale/briskcoin_en.xlf` to create it.
     - In the project workflow settings, ensure that [Translation Memory Fill-up](https://help.transifex.com/en/articles/6224817-setting-up-translation-memory-fill-up) is enabled and that [Translation Memory Context Matching](https://help.transifex.com/en/articles/6224753-translation-memory-with-context) is disabled.
     - Update the Transifex slug in [`.tx/config`](/.tx/config) to the slug of the resource created in the first step. This identifies which resource the translations will be synchronized from.
-    - Make an announcement that translators can start translating for the new version. You can use one of the [previous announcements](https://www.transifex.com/briskcoin/communication/) as a template.
+    - Make an announcement that translators can start translating for the new version. You can use one of the [previous announcements](https://app.transifex.com/briskcoin/communication/) as a template.
     - Change the auto-update URL for the resource to `master`, e.g. `https://raw.githubusercontent.com/briskcoin/briskcoin/master/src/qt/locale/briskcoin_en.xlf`. (Do this only after the previous steps, to prevent an auto-update from interfering.)
 
 #### After branch-off (on the major release branch)
@@ -111,7 +111,7 @@ For the period during which the notes are being edited on the wiki, the version 
 
 Generate list of authors:
 
-    git log --format='- %aN' v(current version, e.g. 25.0)..v(new version, e.g. 25.1) | grep -v 'merge-script' | sort -fiu
+    git log --format='- %aN' v(current version, e.g. 29.0)..v(new version, e.g. 30.0) | grep -v 'merge-script' | sort -fiu
 
 ### Setup and perform Guix builds
 
